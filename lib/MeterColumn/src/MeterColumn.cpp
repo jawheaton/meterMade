@@ -111,6 +111,37 @@ void MeterColumn::SetMeterToRGB(byte meter, RgbColor rgbColor)
     SetMeterToRGBWithMask(meter, rgbColor, MASK_1111);
 }
 
+void MeterColumn::Set7MetersToColor(int color)
+{
+	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+	{
+	    SetMeterToColorWithMask(i, color, MASK_1111);		
+	}
+}
+
+void MeterColumn::Set7MetersToRGB(RgbColor rgbColor)
+{
+	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+	{
+	    SetMeterToRGBWithMask(i, rgbColor, MASK_1111);	
+	}
+}
+
+void MeterColumn::Set7MetersToColorWithMask(int color, byte mask)
+{
+	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+	{
+	    SetMeterToColorWithMask(i, color, mask);		
+	}
+}
+
+void MeterColumn::Set7MetersToRGBWithMask(RgbColor rgbColor, byte mask)
+{
+	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+	{
+	    SetMeterToRGBWithMask(i, rgbColor, mask);	
+	}
+}
 // Set entire column to color
 void MeterColumn::SetColumnToColorWithMask(int color, byte mask)
 {

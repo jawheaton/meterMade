@@ -33,8 +33,17 @@ Adafruit_DotStar strips[] = {
 
 MeterColumn columns[NUM_COLUMNS];
 
-uint8_t mode = 02;
+//pattern mode
+#define PAT_TURNOFF 0
+#define PAT_RAINBOW 1
+#define PAT_TWINKLES 2
+#define PAT_RANGERDEBUG 3
+#define PAT_CYLON 4
+#define PAT_RANDOM 5
+
+uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
+
 
 void setup() {
   Serial.begin(9600);
@@ -52,6 +61,7 @@ void setup() {
   Particle.function("Twinkles", twinkles_start);
   Particle.function("RangerDebug", rangerDebug_start);
   Particle.function("Cylon", cylon_start);
+  Particle.function("Random", random_start);
 
   // Initialize LED strips
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
@@ -68,7 +78,7 @@ void setup() {
 
   // Give everying a moment.
   delay(100);
-  cylon_start("");
+  rainbow_start("");
   // Start the default program
   //rangerDebug_start("");
   //turnOffLEDs(); // or start with all LEDs off
@@ -85,34 +95,33 @@ void loop() {
     Serial.println(mode);
   }
 
-  switch (mode) {
-    case 0:
-      break;
 
-    case 1:
-      rainbow();
-      break;
-
-    case 2:
-      twinkles();
-      break;
-
-    case 3:
-      rangerDebug();
-      break;
-      
-	case 4:
-        cylon();
-        break;
+  switch (mode) 
+  {
+    case PAT_TURNOFF:	
+      break;				// taken care of above?
+    case PAT_RAINBOW:
+      rainbow();	break;
+    case PAT_TWINKLES:
+      twinkles();	break;
+    case PAT_RANGERDEBUG:
+      rangerDebug();break;
+	case PAT_CYLON:
+      cylon();		break;
+	case PAT_RANDOM:
+	  random();		break;
   }
 }
 
 // Cuts power to LEDs via the N-Channel MOSFET.
-void turnOffLEDs() {
+void turnOffLEDs() 
+{
   mode = 0;
   // Send black to make sure the LEDS are cleanly off.
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
+  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) 
+  {
+    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) 
+	{
       strips[stripIdx].setPixelColor(i, 0x000000);
     }
     strips[stripIdx].show();
@@ -136,18 +145,28 @@ void turnOffLEDs() {
 }
 
 // Cloud exposable version of turnOffLEDs()
-int turnOff(String arg) {
+int turnOff(String arg) 
+{
   turnOffLEDs();
   return 1;
 }
 
 // Enables all LED by turning on the N-Channel MOSFET and connecting the LEDs to GND.
-void turnOnLEDs() {
+void turnOnLEDs() 
+{
   ledPower = true;
   digitalWrite(LED_PWR, HIGH); // turn on the N-Channel transistor switch.
   delay(50); // Give the LEDs a moment to power up.
 }
 
+void showAllColumns()
+{
+    // Show all strips.
+    for (int col = 0; col < NUM_COLUMNS; col++) 
+	{
+      strips[col].show();
+    }
+}
 
 
 // =============
@@ -168,20 +187,13 @@ void turnOnLEDs() {
 uint8_t rainbow_speed = 100;
 uint16_t rainbow_hue = 0;
 
-int rainbow_start(String arg) {
-  mode = 1;
+int rainbow_start(String arg) 
+{
+  mode = PAT_RAINBOW;
   turnOnLEDs();
   return 1;
 }
 
-void ShowAllColumns()
-{
-    // Show all strips.
-    for (int col = 0; col < NUM_COLUMNS; col++) {
-      strips[col].show();
-    }
-	
-}
 void rainbow() 
 {
   if (!ledPower) return;
@@ -194,26 +206,50 @@ void rainbow()
       uint8_t hueOffset = (col * NUM_LEDS_PER_COLUMN) * 255 / (NUM_COLUMNS * NUM_LEDS_PER_COLUMN);
       RgbColor rgb = HsvToRgb(HsvColor(hue + hueOffset, 255, 255));
 	  columns[col].SetColumnToRGB(rgb);
-    }
-  ShowAllColumns();
+  }
+  showAllColumns();
 }
 
-int cylon_start(String arg) {
-  mode = 4;
+//////////////////////////////////////////////////////
+int random_start(String arg) 
+{
+  mode = PAT_RANDOM;
   turnOnLEDs();
   return 1;
 }
 
-void cylon() {
+void random()
+{
+    for (int col = 0; col < NUM_COLUMNS; col++) 
+    {
+		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
+		{
+			int color = random(1, 256);
+			columns[col].SetMeterToColor(meter, color);
+		}
+    }
+	
+}
+
+//////////////////////////////////////////////////////
+int cylon_start(String arg) 
+{
+  mode = PAT_CYLON;
+  turnOnLEDs();
+  return 1;
+}
+
+void cylon() 
+{
   if (!ledPower) return;
 
   static uint8_t hue = 0;
   
-  for (int col = 0; col < NUM_COLUMNS; col++) {
+  for (int col = 0; col < NUM_COLUMNS; col++) 
+  {
 	  columns[col].SetColumnToColor(hue++);
   }
-  ShowAllColumns();
-
+  showAllColumns();
 }
 
 void cylon2() 
@@ -229,7 +265,7 @@ void cylon2()
   {
 	columns[col].SetColumnToColor(MY_BLACK);
 	columns[col].SetColumnToColorWithMask(color, mask);
-    ShowAllColumns();
+    showAllColumns();
     delay(200);
   }
 
@@ -259,7 +295,7 @@ uint8_t twinkles_brightness[NUM_COLUMNS * NUM_LEDS_PER_COLUMN];
 bool twinkles_turningOn[NUM_COLUMNS * NUM_LEDS_PER_COLUMN];
 
 int twinkles_start(String arg) {
-  mode = 2;
+  mode = PAT_TWINKLES;
   turnOnLEDs();
   for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
     twinkles_brightness[i] = 0;
@@ -318,7 +354,7 @@ void twinkles() {
 // - Ranger Debug -
 
 int rangerDebug_start(String arg) {
-  mode = 3;
+  mode = PAT_RANGERDEBUG;
   turnOnLEDs();
   return 1;
 }
