@@ -107,9 +107,9 @@ void loop() {
     case PAT_RANGERDEBUG:
       rangerDebug();break;
 	case PAT_CYLON:
-      cylon();		break;
+      cylon2();		break;
 	case PAT_RANDOM:
-	  random();		break;
+	  random_pat();		break;
   }
 }
 
@@ -144,10 +144,25 @@ void turnOffLEDs()
   digitalWrite(LED_CLK10, HIGH);
 }
 
+void turnBlackLEDs() 
+{
+  mode = 0;
+  // Send black to make sure the LEDS are cleanly off.
+  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) 
+  {
+    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) 
+	{
+      strips[stripIdx].setPixelColor(i, 0x000000);
+    }
+    strips[stripIdx].show();
+  }
+}
+
 // Cloud exposable version of turnOffLEDs()
 int turnOff(String arg) 
 {
-  turnOffLEDs();
+  //turnOffLEDs();
+  turnBlackLEDs();
   return 1;
 }
 
@@ -218,7 +233,7 @@ int random_start(String arg)
   return 1;
 }
 
-void random()
+void random_pat()
 {
     for (int col = 0; col < NUM_COLUMNS; col++) 
     {
@@ -228,7 +243,8 @@ void random()
 			columns[col].SetMeterToColor(meter, color);
 		}
     }
-	
+	showAllColumns();
+	delay(500);
 }
 
 //////////////////////////////////////////////////////
@@ -250,6 +266,7 @@ void cylon()
 	  columns[col].SetColumnToColor(hue++);
   }
   showAllColumns();
+  delay(500);
 }
 
 void cylon2() 
@@ -266,7 +283,7 @@ void cylon2()
 	columns[col].SetColumnToColor(MY_BLACK);
 	columns[col].SetColumnToColorWithMask(color, mask);
     showAllColumns();
-    delay(200);
+    delay(20);
   }
 
   // increment mask to rotate LED back and forth
