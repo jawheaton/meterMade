@@ -1,0 +1,17 @@
+github-mac://openRepo/https://github.com/Squeegy/tower-electron
+
+https://www.particle.io/
+User: jim@harmonicsystems.net
+Pass: particle325
+
+Npm install -g particle particle-cli
+Git clone https://github.com/Squeegy/tower-electron.git
+
+Users/jwheaton/Meter/tower-electron
+Brew install dfu-util
+Particle login
+Particle update
+
+particle compile electron . --saveTo firmware.bin
+
+particle flash --usb firmware.bin
