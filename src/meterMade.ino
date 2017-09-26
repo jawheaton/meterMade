@@ -1,7 +1,7 @@
 #include "MeterColumn.h"
 
 #define NUM_COLUMNS 10
-#define LED_BRIGHTNESS 32
+#define LED_BRIGHTNESS 64
 
 #define LED_PWR D7
 #define LED_DAT C0
@@ -116,17 +116,9 @@ void loop() {
 // Cuts power to LEDs via the N-Channel MOSFET.
 void turnOffLEDs() 
 {
-  mode = 0;
-  // Send black to make sure the LEDS are cleanly off.
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) 
-  {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) 
-	{
-      strips[stripIdx].setPixelColor(i, 0x000000);
-    }
-    strips[stripIdx].show();
-  }
-
+  mode = PAT_TURNOFF;
+  
+  turnBlackLEDs();  
   ledPower = false;
   digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
 
@@ -146,23 +138,22 @@ void turnOffLEDs()
 
 void turnBlackLEDs() 
 {
-  mode = 0;
+
   // Send black to make sure the LEDS are cleanly off.
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) 
+  for (int col = 0; col < NUM_COLUMNS; col++) 
   {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) 
-	{
-      strips[stripIdx].setPixelColor(i, 0x000000);
-    }
-    strips[stripIdx].show();
+  	columns[col].SetColumnToColor(MY_BLACK);
   }
+
 }
 
 // Cloud exposable version of turnOffLEDs()
 int turnOff(String arg) 
 {
   //turnOffLEDs();
+  mode = PAT_TURNOFF;
   turnBlackLEDs();
+  showAllColumns();
   return 1;
 }
 
@@ -206,6 +197,9 @@ int rainbow_start(String arg)
 {
   mode = PAT_RAINBOW;
   turnOnLEDs();
+  for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
+    strips[i].setBrightness(LED_BRIGHTNESS);
+  }
   return 1;
 }
 
@@ -282,10 +276,10 @@ void cylon2()
   {
 	columns[col].SetColumnToColor(MY_BLACK);
 	columns[col].SetColumnToColorWithMask(color, mask);
-    showAllColumns();
-    delay(20);
+    //delay(20);
   }
-
+  showAllColumns();
+  delay(250);
   // increment mask to rotate LED back and forth
   switch(state)
   {
@@ -377,14 +371,23 @@ int rangerDebug_start(String arg) {
 }
 
 void rangerDebug() {
-  uint rng = constrain(analogRead(RNG10), 1600, 4095);
-  uint8_t threshold = map(rng, 1600, 4095, 0, NUM_LEDS_PER_COLUMN);
-  Serial.println(threshold);
-
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
-      strips[stripIdx].setPixelColor(i, i < threshold ? 0xffffff : 0x000000);
-    }
-    strips[stripIdx].show();
+  uint dist = analogRead(RNG10);
+	
+  for (int col = 0; col < NUM_COLUMNS; col++) 
+  {
+	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
+	{
+		int color;
+		if (dist > 2200)
+			color = map(dist, 2000, 4000, 0, 128);
+		else
+			color = MY_BLACK;
+		columns[col].SetMeterToColor(meter, color);
+	}
   }
+  showAllColumns();
+  delay(20);
+  
+  Serial.println(dist);
+
 }
