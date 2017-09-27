@@ -7,6 +7,9 @@ Pass: particle325
 Npm install -g particle particle-cli
 Git clone https://github.com/Squeegy/tower-electron.git
 
+https://community.particle.io
+
+
 Users/jwheaton/Meter/tower-electron
 Brew install dfu-util
 Particle login
@@ -15,3 +18,6 @@ Particle update
 particle compile electron . --saveTo firmware.bin
 
 particle flash --usb firmware.bin
+
+Separate command window for serial output:
+Particle serial monitor
