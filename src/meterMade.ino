@@ -314,10 +314,8 @@ void cylon2()
 int brightness_start(String arg) {
   int newBrightness;
   
-  if (arg == "255")
-	  newBrightness = 255;
-  else
-	  newBrightness = 64;
+  newBrightness == toInt(arg);
+
   mode = PAT_BRIGHTNESS;
   turnOnLEDs();
   gBrightness = newBrightness;
