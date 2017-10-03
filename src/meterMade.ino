@@ -36,13 +36,14 @@ MeterColumn columns[NUM_COLUMNS];
 //pattern mode
 #define PAT_TURNOFF 0
 #define PAT_RAINBOW 1
-#define PAT_TWINKLES 2
+#define PAT_BRIGHTNESS 2
 #define PAT_RANGERDEBUG 3
 #define PAT_CYLON 4
 #define PAT_RANDOM 5
 
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
+int gBrightness = LED_BRIGHTNESS;
 
 
 void setup() {
@@ -58,7 +59,7 @@ void setup() {
 
   // Every pattern should register a start funtion here.
   Particle.function("Rainbow", rainbow_start);
-  Particle.function("Twinkles", twinkles_start);
+  Particle.function("Brightness", brightness_start);
   Particle.function("RangerDebug", rangerDebug_start);
   Particle.function("Cylon", cylon_start);
   Particle.function("Random", random_start);
@@ -66,7 +67,7 @@ void setup() {
   // Initialize LED strips
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
     strips[i].begin();
-    strips[i].setBrightness(LED_BRIGHTNESS);
+    strips[i].setBrightness(gBrightness);
     strips[i].show();
   }
 
@@ -102,8 +103,8 @@ void loop() {
       break;				// taken care of above?
     case PAT_RAINBOW:
       rainbow();	break;
-    case PAT_TWINKLES:
-      twinkles();	break;
+    case PAT_BRIGHTNESS:
+      brightness();	break;
     case PAT_RANGERDEBUG:
       rangerDebug();break;
 	case PAT_CYLON:
@@ -174,6 +175,14 @@ void showAllColumns()
     }
 }
 
+void setAllBrightness(int brightness)
+{
+    for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
+      strips[i].begin();
+      strips[i].setBrightness(brightness);
+      strips[i].show();
+    }
+}
 
 // =============
 // = PATTERNS! =
@@ -299,67 +308,59 @@ void cylon2()
     state = 0;
 }
 
-// ------------
-// - Twinkles -
+// ----------------
+// - Brightness Test -
 
-uint8_t twinkles_brightness[NUM_COLUMNS * NUM_LEDS_PER_COLUMN];
-bool twinkles_turningOn[NUM_COLUMNS * NUM_LEDS_PER_COLUMN];
-
-int twinkles_start(String arg) {
-  mode = PAT_TWINKLES;
+int brightness_start(String arg) {
+  int newBrightness;
+  
+  if (arg == "255")
+	  newBrightness = 255;
+  else
+	  newBrightness = 64;
+  mode = PAT_BRIGHTNESS;
   turnOnLEDs();
-  for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
-    twinkles_brightness[i] = 0;
-    twinkles_turningOn[i] = false;
-  }
+  gBrightness = newBrightness;
+  if (gBrightness < 0)
+	  gBrightness = 0;
+  if (gBrightness > 255)
+	  gBrightness = 255;
+  turnBlackLEDs();
+  
   return 1;
 }
 
-void twinkles() {
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
-      uint ledIdx = stripIdx * NUM_LEDS_PER_COLUMN + i;
-
-      // animate the twinkles!
-      if (twinkles_brightness[ledIdx] > 0) {
-        // The pixel is turning on, count up.
-        if (twinkles_turningOn[ledIdx]) {
-          twinkles_brightness[ledIdx]++;
-          // If max brightness, then now start dimming it.
-          if (twinkles_brightness[ledIdx] == 255) {
-            twinkles_turningOn[ledIdx] = false;
-          }
-
-        // The pixel is turning off, count down.
-        } else if (twinkles_brightness[ledIdx] > 0) {
-          twinkles_brightness[ledIdx]--;
-        }
-      }
-
-      // See if we can start new twinkles now.
-
-      // If the pixel is off.
-      if (twinkles_brightness[ledIdx] == 0) {
-
-        // if a rare random event occurred.
-        if (random(100000) <= 100) {
-
-          // Then start to turn on the pixel.
-          twinkles_brightness[ledIdx] = 1;
-          twinkles_turningOn[ledIdx] = true;
-        }
-      }
+void brightness() 
+{
+	static int color = MY_RED;
+	static int myBrightness = 0;
+	
+	myBrightness += 1;
+	if (myBrightness >= gBrightness)
+	{
+		delay(2000);	// pause at maximum brightness
+		myBrightness = 0;
+		switch (color)
+		{
+			case MY_RED: color = MY_BLUE; break;
+			case MY_BLUE: color = MY_GREEN; break;
+			case MY_GREEN: color = MY_WHITE; break;
+			case MY_WHITE: color = MY_RED; break;
+			default: break;
+		}
+	}
+	// step through colors and brightnesses
+    for (int col = 0; col < NUM_COLUMNS; col++) 
+    {
+		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
+		{
+			columns[col].SetMeterToColor(meter, color);
+		}
     }
-  }
-
-  for (uint8_t stripIdx = 0; stripIdx < NUM_COLUMNS; stripIdx++) {
-    for (uint8_t i = 0; i < NUM_LEDS_PER_COLUMN; i++) {
-      uint8_t brightness = twinkles_brightness[stripIdx * NUM_COLUMNS + i];
-      strips[stripIdx].setPixelColor(i, brightness, brightness, brightness);
-    }
-    strips[stripIdx].show();
-  }
+	setAllBrightness(myBrightness);
+	showAllColumns();
 }
+
 
 // ----------------
 // - Ranger Debug -

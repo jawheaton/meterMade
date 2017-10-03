@@ -56,7 +56,13 @@ public:
     void SetMeterToRGBWithMask(byte meter, RgbColor rgbColor, byte mask);
     void SetMeterToColor(byte meter, int color);
     void SetMeterToRGB(byte meter, RgbColor rgbColor);
-    
+
+	// set the bottom 7 meters to the same color
+    void Set7MetersToColorWithMask(int color, byte mask);
+    void Set7MetersToRGBWithMask(RgbColor rgbColor, byte mask);
+    void Set7MetersToColor(int color);
+    void Set7MetersToRGB(RgbColor rgbColor);
+
     // Set entire column to color
     void SetColumnToColorWithMask(int color, byte mask);
     void SetColumnToRGBWitMask(RgbColor rbgColor, byte mask);

@@ -10,10 +10,12 @@ Git clone https://github.com/Squeegy/tower-electron.git
 https://community.particle.io
 
 
-Users/jwheaton/Meter/tower-electron
+Users/jwheaton/Documents/GitHub/meterMade
 Brew install dfu-util
 Particle login
 Particle update
+
+Cwd should be /Users/jwheaton/Documents/GitHub/meterMade
 
 particle compile electron . --saveTo firmware.bin
 
