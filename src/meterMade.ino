@@ -2,6 +2,7 @@
 
 #define NUM_COLUMNS 10
 #define LED_BRIGHTNESS 64
+#define NUM_DISTANCE_SENSORS 10
 
 #define LED_PWR D7
 #define LED_DAT C0
@@ -16,7 +17,17 @@
 #define LED_CLK9 D3
 #define LED_CLK10 D4
 
-#define RNG10 A3
+#define RNG_1	B0
+#define RNG_2	B1
+#define RNG_3	B2
+#define RNG_4	B3
+#define RNG_5	B4
+#define RNG_6	B5
+#define RNG_7	A0
+#define RNG_8	A1
+#define RNG_9	A2
+#define RNG_10	A3
+
 
 Adafruit_DotStar strips[] = {
   Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1),
@@ -41,9 +52,11 @@ MeterColumn columns[NUM_COLUMNS];
 #define PAT_CYLON 4
 #define PAT_RANDOM 5
 
+
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
 int gBrightness = LED_BRIGHTNESS;
+int gDistance[NUM_DISTANCE_SENSORS];
 
 
 void setup() {
@@ -75,7 +88,16 @@ void setup() {
   pinMode(LED_PWR, OUTPUT);
 
   // Setup sensor inputs
-  pinMode(RNG10, INPUT);
+  pinMode(RNG_1, INPUT);
+  pinMode(RNG_2, INPUT);
+  pinMode(RNG_3, INPUT);
+  pinMode(RNG_4, INPUT);
+  pinMode(RNG_5, INPUT);
+  pinMode(RNG_6, INPUT);
+  pinMode(RNG_7, INPUT);
+  pinMode(RNG_8, INPUT);
+  pinMode(RNG_9, INPUT);
+  pinMode(RNG_10, INPUT);
 
   // Give everying a moment.
   delay(100);
@@ -96,7 +118,8 @@ void loop() {
     Serial.println(mode);
   }
 
-
+  readDistances();
+  
   switch (mode) 
   {
     case PAT_TURNOFF:	
@@ -112,6 +135,25 @@ void loop() {
 	case PAT_RANDOM:
 	  random_pat();		break;
   }
+}
+
+void readDistances()
+{
+	gDistance[0] = analogRead(RNG_1);
+	gDistance[1] = analogRead(RNG_2);
+	gDistance[2] = analogRead(RNG_3);
+	gDistance[3] = analogRead(RNG_4);
+	gDistance[4] = analogRead(RNG_5);
+	gDistance[5] = analogRead(RNG_6);
+	gDistance[6] = analogRead(RNG_7);
+	gDistance[7] = analogRead(RNG_8);
+	gDistance[8] = analogRead(RNG_9);
+	gDistance[9] = analogRead(RNG_10);
+	for (int i=0; i<10; i++)
+	{
+	    Serial.print(gDistance[i]); Serial.print(" ");
+	}
+	Serial.println();
 }
 
 // Cuts power to LEDs via the N-Channel MOSFET.
@@ -314,7 +356,7 @@ void cylon2()
 int brightness_start(String arg) {
   int newBrightness;
   
-  newBrightness == toInt(arg);
+  newBrightness = arg.toInt();
 
   mode = PAT_BRIGHTNESS;
   turnOnLEDs();
@@ -370,15 +412,14 @@ int rangerDebug_start(String arg) {
 }
 
 void rangerDebug() {
-  uint dist = analogRead(RNG10);
 	
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
 	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
 	{
 		int color;
-		if (dist > 2200)
-			color = map(dist, 2000, 4000, 0, 128);
+		if (gDistance[2] > 2200)
+			color = map(gDistance[0], 2000, 4000, 0, 128);
 		else
 			color = MY_BLACK;
 		columns[col].SetMeterToColor(meter, color);
@@ -387,6 +428,4 @@ void rangerDebug() {
   showAllColumns();
   delay(20);
   
-  Serial.println(dist);
-
 }
