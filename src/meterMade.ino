@@ -419,7 +419,7 @@ void rangerDebug() {
 	{
 		int color;
 		if (gDistance[2] > 2200)
-			color = map(gDistance[0], 2000, 4000, 0, 128);
+			color = map(gDistance[2], 2000, 4000, 0, 128);
 		else
 			color = MY_BLACK;
 		columns[col].SetMeterToColor(meter, color);
