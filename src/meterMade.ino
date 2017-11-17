@@ -1,7 +1,7 @@
 #include "MeterColumn.h"
 
 #define NUM_COLUMNS 10
-#define LED_BRIGHTNESS 64
+#define LED_BRIGHTNESS 128
 #define NUM_DISTANCE_SENSORS 10
 
 #define LED_PWR D7
@@ -51,13 +51,15 @@ MeterColumn columns[NUM_COLUMNS];
 #define PAT_RANGERDEBUG 3
 #define PAT_CYLON 4
 #define PAT_RANDOM 5
+#define PAT_CHASE 6
 
 
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
 int gBrightness = LED_BRIGHTNESS;
 int gDistance[NUM_DISTANCE_SENSORS];
-
+unsigned long gChaseMsecs = 250;
+int gChaseMode = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -72,6 +74,7 @@ void setup() {
 
   // Every pattern should register a start funtion here.
   Particle.function("Rainbow", rainbow_start);
+  Particle.function("Chase", chase_start);
   Particle.function("Brightness", brightness_start);
   Particle.function("RangerDebug", rangerDebug_start);
   Particle.function("Cylon", cylon_start);
@@ -134,6 +137,9 @@ void loop() {
       cylon2();		break;
 	case PAT_RANDOM:
 	  random_pat();		break;
+	case PAT_CHASE:
+	  chase_pat();		break;
+	  
   }
 }
 
@@ -428,4 +434,45 @@ void rangerDebug() {
   showAllColumns();
   delay(20);
   
+}
+
+int chase_start(String arg) {
+  mode = PAT_CHASE;
+  turnOnLEDs();
+  gChaseMode = arg.toInt();
+  return 1;  
+}
+
+void chase_pat() {
+  static int curMeter = 0;
+  static int curColumn = 0;
+  static int curColor = 1;
+  int delayMsecs = 250;
+  
+  turnBlackLEDs();
+	  switch (gChaseMode)
+	  {
+		  case 0:
+		  	columns[curColumn++].SetColumnToColor(curColor++);
+		  	if (curColor >= MY_WHITE)
+			 	 curColor = 1;
+		  	if (curColumn >= NUM_COLUMNS)
+			  	curColumn = 0;
+			delayMsecs = 1000;
+			break;
+		case 1:
+		default:
+		for (int i=0; i<NUM_COLUMNS; i++)
+		{
+			columns[i].SetMeterToColor(curMeter, curColor);
+		}
+	  	if (curColor++ >= MY_WHITE)
+		 	 curColor = 1;
+	  	if (curMeter++ >= NUM_METERS_PER_COLUMN)
+		  	curMeter = 0;
+		delayMsecs = 1000;
+		break;
+	  }
+  showAllColumns();
+  delay(delayMsecs); 
 }
