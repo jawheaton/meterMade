@@ -23,3 +23,11 @@ particle flash --usb firmware.bin
 
 Separate command window for serial output:
 Particle serial monitor
+
+https://docs.particle.io/reference/cli/
+
+Remote flashing commands:
+Particle list [make sure we see Meterboy]
+particle flash 3a0046001751353338363036 firmware.bin
+
+

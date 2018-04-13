@@ -52,6 +52,7 @@ MeterColumn columns[NUM_COLUMNS];
 #define PAT_CYLON 4
 #define PAT_RANDOM 5
 #define PAT_CHASE 6
+#define PAT_TEST 7
 
 
 uint8_t mode = PAT_RAINBOW;
@@ -79,7 +80,8 @@ void setup() {
   Particle.function("RangerDebug", rangerDebug_start);
   Particle.function("Cylon", cylon_start);
   Particle.function("Random", random_start);
-
+  Particle.function("Test", test_start);
+  
   // Initialize LED strips
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
     strips[i].begin();
@@ -139,7 +141,10 @@ void loop() {
 	  random_pat();		break;
 	case PAT_CHASE:
 	  chase_pat();		break;
-	  
+	case PAT_TEST:
+	  test_pat(); break;
+	default:
+	 rainbow(); break;  
   }
 }
 
@@ -475,4 +480,44 @@ void chase_pat() {
 	  }
   showAllColumns();
   delay(delayMsecs); 
+}
+
+int test_start(String arg) {
+  mode = PAT_TEST;
+  turnOnLEDs();
+  return 1;  
+}
+
+void test_pat() {
+	static int curColumn = 0;
+	static int curLED = 0;
+	static int curMeter = 0;
+	
+  turnBlackLEDs();
+  if (curLED < NUM_LEDS_PER_COLUMN)
+  {
+	  // for each column, first turn on each pixel of each meter
+	  for (int j=0; j<NUM_COLUMNS; j++)
+	  {
+		  columns[j].SetLEDToColor(curLED, MY_WHITE);
+	  }
+	  curLED++;
+  }
+  else {
+	  if (curMeter >= NUM_METERS_PER_COLUMN)
+	  {
+		  mode = PAT_RAINBOW;
+		  curColumn = 0;
+		  curMeter = 0;
+		  curLED = 0;
+		  return;
+	  }
+	  for (int j=0; j<NUM_COLUMNS; j++)
+	  {
+		columns[j].SetMeterToColor(curMeter, MY_RED);
+	  }
+	  curMeter++;
+  }
+  showAllColumns();
+  delay(5000);
 }
