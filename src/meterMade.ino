@@ -17,8 +17,8 @@
 #define LED_CLK9 D3
 #define LED_CLK10 D4
 
-#define RNG_1	B0
-#define RNG_2	B1
+#define RNG_1	A4
+#define RNG_2	A5
 #define RNG_3	B2
 #define RNG_4	B3
 #define RNG_5	B4
@@ -27,7 +27,7 @@
 #define RNG_8	A1
 #define RNG_9	A2
 #define RNG_10	A3
-
+#define BAT_LVL A6
 
 Adafruit_DotStar strips[] = {
   Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1),
@@ -61,6 +61,7 @@ int gBrightness = LED_BRIGHTNESS;
 int gDistance[NUM_DISTANCE_SENSORS];
 unsigned long gChaseMsecs = 250;
 int gChaseMode = 0;
+int gBatLvl = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -104,6 +105,8 @@ void setup() {
   pinMode(RNG_9, INPUT);
   pinMode(RNG_10, INPUT);
 
+  pinMode(BAT_LVL, INPUT);
+
   // Give everying a moment.
   delay(100);
   rainbow_start("");
@@ -124,10 +127,12 @@ void loop() {
   }
 
   readDistances();
+  readBatLvl();
   
   switch (mode) 
   {
     case PAT_TURNOFF:	
+	turnOffLEDs();
       break;				// taken care of above?
     case PAT_RAINBOW:
       rainbow();	break;
@@ -146,6 +151,12 @@ void loop() {
 	default:
 	 rainbow(); break;  
   }
+}
+
+void readBatLvl()
+{
+	gBatLvl = analogRead(BAT_LVL);
+	Serial.print("Bat. Level: "); Serial.println(gBatLvl);
 }
 
 void readDistances()
@@ -252,16 +263,13 @@ void setAllBrightness(int brightness)
 // -----------
 // - RAINBOW -
 
-uint8_t rainbow_speed = 100;
+uint8_t rainbow_speed = 1000;
 uint16_t rainbow_hue = 0;
 
 int rainbow_start(String arg) 
 {
   mode = PAT_RAINBOW;
   turnOnLEDs();
-  for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
-    strips[i].setBrightness(LED_BRIGHTNESS);
-  }
   return 1;
 }
 
@@ -274,10 +282,12 @@ void rainbow()
 
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
-      uint8_t hueOffset = (col * NUM_LEDS_PER_COLUMN) * 255 / (NUM_COLUMNS * NUM_LEDS_PER_COLUMN);
-      RgbColor rgb = HsvToRgb(HsvColor(hue + hueOffset, 255, 255));
-	  columns[col].SetColumnToRGB(rgb);
+	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
+	{
+		columns[col].SetMeterToColor(meter, gHue++);
+	}
   }
+  delay(500);
   showAllColumns();
 }
 
@@ -383,7 +393,8 @@ int brightness_start(String arg) {
 
 void brightness() 
 {
-	static int color = MY_RED;
+#if 0
+		static int color = MY_RED;
 	static int myBrightness = 0;
 	
 	myBrightness += 1;
@@ -400,7 +411,9 @@ void brightness()
 			default: break;
 		}
 	}
+#endif
 	// step through colors and brightnesses
+	int color = MY_WHITE;
     for (int col = 0; col < NUM_COLUMNS; col++) 
     {
 		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
@@ -408,7 +421,7 @@ void brightness()
 			columns[col].SetMeterToColor(meter, color);
 		}
     }
-	setAllBrightness(myBrightness);
+	setAllBrightness(gBrightness);
 	showAllColumns();
 }
 
@@ -429,8 +442,8 @@ void rangerDebug() {
 	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
 	{
 		int color;
-		if (gDistance[2] > 2200)
-			color = map(gDistance[2], 2000, 4000, 0, 128);
+		if (gDistance[3] > 2500)
+			color = map(gDistance[3], 2500, 4000, 0, 128);
 		else
 			color = MY_BLACK;
 		columns[col].SetMeterToColor(meter, color);
