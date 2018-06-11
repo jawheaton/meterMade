@@ -62,6 +62,7 @@ int gDistance[NUM_DISTANCE_SENSORS];
 unsigned long gChaseMsecs = 250;
 int gChaseMode = 0;
 int gBatLvl = 0;
+byte gHue = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -502,35 +503,11 @@ int test_start(String arg) {
 }
 
 void test_pat() {
-	static int curColumn = 0;
-	static int curLED = 0;
-	static int curMeter = 0;
-	
   turnBlackLEDs();
-  if (curLED < NUM_LEDS_PER_COLUMN)
-  {
-	  // for each column, first turn on each pixel of each meter
-	  for (int j=0; j<NUM_COLUMNS; j++)
-	  {
-		  columns[j].SetLEDToColor(curLED, MY_WHITE);
-	  }
-	  curLED++;
-  }
-  else {
-	  if (curMeter >= NUM_METERS_PER_COLUMN)
-	  {
-		  mode = PAT_RAINBOW;
-		  curColumn = 0;
-		  curMeter = 0;
-		  curLED = 0;
-		  return;
-	  }
-	  for (int j=0; j<NUM_COLUMNS; j++)
-	  {
-		columns[j].SetMeterToColor(curMeter, MY_RED);
-	  }
-	  curMeter++;
-  }
-  showAllColumns();
-  delay(5000);
+    for (int col = 0; col < NUM_COLUMNS; col++) 
+    {
+		columns[col].SetColumnToColor(MY_WHITE);
+    }
+	showAllColumns();
+	delay(500);
 }
