@@ -63,6 +63,7 @@ unsigned long gChaseMsecs = 250;
 int gChaseMode = 0;
 int gBatLvl = 0;
 byte gHue = 0;
+int	gThreshold = 2500;
 
 void setup() {
   Serial.begin(9600);
@@ -71,6 +72,19 @@ void setup() {
 	  columns[i].SetDotStars(&strips[i]);
   }
 
+  // Expose cloud variables (up to 20)
+  Particle.variable("BatLvl", gBatLvl);
+  Particle.variable("Brightness", gBrightness);
+  Particle.variable("Distance1", gDistance[0]);
+  Particle.variable("Distance2", gDistance[1]);
+  Particle.variable("Distance3", gDistance[2]);
+  Particle.variable("Distance4", gDistance[3]);
+  Particle.variable("Distance5", gDistance[4]);
+  Particle.variable("Distance6", gDistance[5]);
+  Particle.variable("Distance7", gDistance[6]);
+  Particle.variable("Distance8", gDistance[7]);
+  Particle.variable("Distance9", gDistance[8]);
+  Particle.variable("Distance10", gDistance[9]);
   
   // Expose cloud functions.
   Particle.function("TurnOff", turnOff);
@@ -431,7 +445,11 @@ void brightness()
 // - Ranger Debug -
 
 int rangerDebug_start(String arg) {
+  
+  gThreshold = arg.toInt();
+  gBrightness = 128;
   mode = PAT_RANGERDEBUG;
+  turnBlackLEDs();
   turnOnLEDs();
   return 1;
 }
@@ -440,19 +458,12 @@ void rangerDebug() {
 	
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
-	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
-	{
-		int color;
-		if (gDistance[3] > 2500)
-			color = map(gDistance[3], 2500, 4000, 0, 128);
-		else
-			color = MY_BLACK;
-		columns[col].SetMeterToColor(meter, color);
-	}
+	  if (gDistance[col] > gThreshold)
+		columns[col].SetColumnToColor(MY_RED);
+	  else
+		columns[col].SetColumnToColor(MY_BLACK);
   }
   showAllColumns();
-  delay(20);
-  
 }
 
 int chase_start(String arg) {
@@ -502,12 +513,22 @@ int test_start(String arg) {
   return 1;  
 }
 
-void test_pat() {
-  turnBlackLEDs();
-    for (int col = 0; col < NUM_COLUMNS; col++) 
+void test_one_color(int color)
+{
+    turnBlackLEDs();
+	for (int bright = 63; bright <= 255; bright+= 64)
     {
-		columns[col].SetColumnToColor(MY_WHITE);
-    }
-	showAllColumns();
-	delay(500);
+		for (int col = 0; col < NUM_COLUMNS; col++) 
+    	{
+			columns[col].SetColumnToColor(color);
+    	}
+		setAllBrightness(bright);
+		showAllColumns();
+		delay(2000);
+	}
+}
+
+void test_pat() {
+	test_one_color(MY_RED);
+	test_one_color(MY_WHITE);
 }
