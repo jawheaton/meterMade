@@ -64,7 +64,7 @@ void MeterColumn::SetLEDToColor(byte ledIndex, int color)
             {
                 hue = color-1;	// color must be 1..256 at this point
 			    RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
-		        _pDotStars->setPixelColor(ledIndex, rgb.r, rgb.b, rgb.g);
+		        _pDotStars->setPixelColor(ledIndex, rgb.r, rgb.g, rgb.b);
             }
             break;
     }
@@ -75,7 +75,7 @@ void MeterColumn::SetLEDToRGB(byte ledIndex, RgbColor rgbColor)
 {
     if (ledIndex >= NUM_LEDS_PER_COLUMN)  // bounds check
         return;
-    _pDotStars->setPixelColor(ledIndex, rgbColor.r, rgbColor.b, rgbColor.g);
+    _pDotStars->setPixelColor(ledIndex, rgbColor.r, rgbColor.g, rgbColor.b);
 }
 
 // set the meter on the column to a certain color.
