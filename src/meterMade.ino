@@ -1,7 +1,6 @@
 #include "MeterColumn.h"
 
 #define NUM_COLUMNS 10
-#define LED_BRIGHTNESS 128
 #define NUM_DISTANCE_SENSORS 10
 
 #define LED_PWR D7
@@ -47,23 +46,26 @@ MeterColumn columns[NUM_COLUMNS];
 //pattern mode
 #define PAT_TURNOFF 0
 #define PAT_RAINBOW 1
-#define PAT_BRIGHTNESS 2
-#define PAT_RANGERDEBUG 3
-#define PAT_CYLON 4
-#define PAT_RANDOM 5
-#define PAT_CHASE 6
-#define PAT_TEST 7
+#define PAT_RANGER 2
+#define PAT_CYLON 3
+#define PAT_RANDOM 4
+#define PAT_CHASE 5
+#define PAT_TEST 6
 
 
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
-int gBrightness = LED_BRIGHTNESS;
+int gBrightness = 128;
 int gDistance[NUM_DISTANCE_SENSORS];
-unsigned long gChaseMsecs = 250;
 int gChaseMode = 0;
+int gRainbowMode = 0;
+int gRandomMode = 0;
 int gBatLvl = 0;
 byte gHue = 0;
+int gColor = 0;
 int	gThreshold = 2500;
+int gDelay = 250;
+int gDebug = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -75,25 +77,21 @@ void setup() {
   // Expose cloud variables (up to 20)
   Particle.variable("BatLvl", gBatLvl);
   Particle.variable("Brightness", gBrightness);
-  Particle.variable("Distance1", gDistance[0]);
-  Particle.variable("Distance2", gDistance[1]);
-  Particle.variable("Distance3", gDistance[2]);
-  Particle.variable("Distance4", gDistance[3]);
-  Particle.variable("Distance5", gDistance[4]);
-  Particle.variable("Distance6", gDistance[5]);
-  Particle.variable("Distance7", gDistance[6]);
-  Particle.variable("Distance8", gDistance[7]);
-  Particle.variable("Distance9", gDistance[8]);
-  Particle.variable("Distance10", gDistance[9]);
+  Particle.variable("Delay", gDelay);
+  Particle.variable("Debug", gDebug);
   
   // Expose cloud functions.
   Particle.function("TurnOff", turnOff);
 
   // Every pattern should register a start funtion here.
+  Particle.function("SetBright", brightness_start);
+  Particle.function("SetDelay", delay_start);
+  Particle.function("SetThreshold", threshold_start);
+  Particle.function("SetDebug", debug_start);
+  
   Particle.function("Rainbow", rainbow_start);
   Particle.function("Chase", chase_start);
-  Particle.function("Brightness", brightness_start);
-  Particle.function("RangerDebug", rangerDebug_start);
+  Particle.function("Ranger", ranger_start);
   Particle.function("Cylon", cylon_start);
   Particle.function("Random", random_start);
   Particle.function("Test", test_start);
@@ -132,14 +130,6 @@ void setup() {
 
 // Simply animate the current mode.
 void loop() {
-  if (Serial.available() > 0) {
-    mode = Serial.parseInt();
-    mode > 0 ? turnOnLEDs() : turnOffLEDs();
-
-    Serial.read();
-    Serial.print("Set mode: ");
-    Serial.println(mode);
-  }
 
   readDistances();
   readBatLvl();
@@ -147,14 +137,12 @@ void loop() {
   switch (mode) 
   {
     case PAT_TURNOFF:	
-	turnOffLEDs();
+	  turnOffLEDs();
       break;				// taken care of above?
     case PAT_RAINBOW:
       rainbow();	break;
-    case PAT_BRIGHTNESS:
-      brightness();	break;
-    case PAT_RANGERDEBUG:
-      rangerDebug();break;
+    case PAT_RANGER:
+      ranger();break;
 	case PAT_CYLON:
       cylon2();		break;
 	case PAT_RANDOM:
@@ -171,11 +159,12 @@ void loop() {
 void readBatLvl()
 {
 	gBatLvl = analogRead(BAT_LVL);
-	Serial.print("Bat. Level: "); Serial.println(gBatLvl);
+	// Serial.print("Bat. Level: "); Serial.println(gBatLvl);
 }
 
 void readDistances()
 {
+	char str[200];
 	gDistance[0] = analogRead(RNG_1);
 	gDistance[1] = analogRead(RNG_2);
 	gDistance[2] = analogRead(RNG_3);
@@ -186,11 +175,13 @@ void readDistances()
 	gDistance[7] = analogRead(RNG_8);
 	gDistance[8] = analogRead(RNG_9);
 	gDistance[9] = analogRead(RNG_10);
-	for (int i=0; i<10; i++)
+	if (gDebug > 255)
 	{
-	    Serial.print(gDistance[i]); Serial.print(" ");
+		sprintf(str, "%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d",
+			gDistance[0], gDistance[1], gDistance[2], gDistance[3], gDistance[4], 
+			gDistance[5], gDistance[6], gDistance[7], gDistance[8], gDistance[9]);	
+		Serial.println(str);
 	}
-	Serial.println();
 }
 
 // Cuts power to LEDs via the N-Channel MOSFET.
@@ -218,13 +209,11 @@ void turnOffLEDs()
 
 void turnBlackLEDs() 
 {
-
   // Send black to make sure the LEDS are cleanly off.
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
   	columns[col].SetColumnToColor(MY_BLACK);
   }
-
 }
 
 // Cloud exposable version of turnOffLEDs()
@@ -257,10 +246,16 @@ void showAllColumns()
 void setAllBrightness(int brightness)
 {
     for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
-      strips[i].begin();
       strips[i].setBrightness(brightness);
-      strips[i].show();
     }
+}
+
+// cycle gColor from 1..256 = 8-bit color hue in MyColor space
+void inc_gColor()
+{
+	gColor++;
+	if (gColor > MY_LASTCOLOR)
+		gColor = 1;
 }
 
 // =============
@@ -274,41 +269,111 @@ void setAllBrightness(int brightness)
 // initialization the pattern may require.
 
 
+// these are just routines that set a variable
+// they don't change the current pattern.
+
+int brightness_start(String arg) {
+  
+  gBrightness = arg.toInt();
+  if (gBrightness < 0)
+	  gBrightness = 0;
+  if (gBrightness > 255)
+	  gBrightness = 255;
+  setAllBrightness(gBrightness);
+  
+  return 1;
+}
+
+int delay_start(String arg) {
+  
+  gDelay = arg.toInt();
+  if (gDelay < 0)
+	  gDelay = 0;
+  if (gDelay > 10000)
+	  gDelay = 10000;
+  
+  return 1;
+}
+
+int threshold_start(String arg) {
+  
+  gThreshold = arg.toInt();
+  if (gThreshold < 0)
+	  gThreshold = 0;
+  if (gThreshold > 5000)
+	  gThreshold = 5000;
+  
+  return 1;
+}
+
+int debug_start(String arg) {
+	RgbColor rgb;
+	
+  	gDebug = arg.toInt();
+  	if (gDebug < 0)
+	  	gDebug = 0;
+	
+  return 1;
+}
+
 
 // -----------
 // - RAINBOW -
 
-uint8_t rainbow_speed = 1000;
-uint16_t rainbow_hue = 0;
-
 int rainbow_start(String arg) 
 {
+  gRainbowMode = arg.toInt();
   mode = PAT_RAINBOW;
+  gColor = 1;
+  gDelay = 500;
   turnOnLEDs();
   return 1;
 }
 
 void rainbow() 
 {
-  if (!ledPower) return;
-
-  rainbow_hue += rainbow_speed;
-  uint8_t hue = rainbow_hue >> 8;
-
-  for (int col = 0; col < NUM_COLUMNS; col++) 
-  {
-	for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
+	if (gDebug)
 	{
-		columns[col].SetMeterToColor(meter, gHue++);
+		RgbColor rgb = columns[0].ColorToRGB(gColor);
+		Serial.print("rainbow color: ");
+		Serial.print(gColor);
+		Serial.print(" r: "); Serial.print(rgb.r);
+		Serial.print(" g: "); Serial.print(rgb.g);
+		Serial.print(" b: "); Serial.print(rgb.b);
+		Serial.println();
 	}
-  }
-  delay(500);
-  showAllColumns();
+	switch(gRainbowMode)
+	{
+		default:
+			for (int col = 0; col < NUM_COLUMNS; col++) 
+			{
+				columns[col].SetColumnToColor(gColor);
+			}
+			inc_gColor();
+		break;
+	}
+    showAllColumns();
+    delay(gDelay);
 }
 
 //////////////////////////////////////////////////////
 int random_start(String arg) 
 {
+  gRandomMode = arg.toInt();
+  if (gRandomMode < 0)
+	  gRandomMode = 0;
+  if (gRandomMode > 255)
+	  gRandomMode = 255;
+if (gDebug)
+{
+	RgbColor rgb = columns[0].ColorToRGB(gRandomMode);
+	Serial.print("random color: ");
+	Serial.print(gRandomMode);
+	Serial.print(" r: "); Serial.print(rgb.r);
+	Serial.print(" g: "); Serial.print(rgb.g);
+	Serial.print(" b: "); Serial.print(rgb.b);
+	Serial.println();
+}
   mode = PAT_RANDOM;
   turnOnLEDs();
   return 1;
@@ -320,17 +385,22 @@ void random_pat()
     {
 		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
 		{
-			int color = random(1, 256);
+			int color;
+			if (gRandomMode == 0)
+				color = random(2,255);
+			else
+				color = gRandomMode;
 			columns[col].SetMeterToColor(meter, color);
 		}
     }
 	showAllColumns();
-	delay(500);
+	delay(gDelay);
 }
 
 //////////////////////////////////////////////////////
 int cylon_start(String arg) 
 {
+  gColor = 0;
   mode = PAT_CYLON;
   turnOnLEDs();
   return 1;
@@ -338,16 +408,14 @@ int cylon_start(String arg)
 
 void cylon() 
 {
-  if (!ledPower) return;
-
-  static uint8_t hue = 0;
   
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
-	  columns[col].SetColumnToColor(hue++);
+	  columns[col].SetColumnToColor(gColor);
   }
+  inc_gColor();
   showAllColumns();
-  delay(500);
+  delay(gDelay);
 }
 
 void cylon2() 
@@ -356,9 +424,6 @@ void cylon2()
   static byte state = 0;
   static byte mask = MASK_1000;
 
-  if (!ledPower) 
-	return;
-
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
 	columns[col].SetColumnToColor(MY_BLACK);
@@ -366,7 +431,7 @@ void cylon2()
     //delay(20);
   }
   showAllColumns();
-  delay(250);
+  delay(gDelay);
   // increment mask to rotate LED back and forth
   switch(state)
   {
@@ -386,80 +451,31 @@ void cylon2()
     state = 0;
 }
 
-// ----------------
-// - Brightness Test -
 
-int brightness_start(String arg) {
-  int newBrightness;
-  
-  newBrightness = arg.toInt();
-
-  mode = PAT_BRIGHTNESS;
-  turnOnLEDs();
-  gBrightness = newBrightness;
-  if (gBrightness < 0)
-	  gBrightness = 0;
-  if (gBrightness > 255)
-	  gBrightness = 255;
-  turnBlackLEDs();
-  
-  return 1;
-}
-
-void brightness() 
-{
-#if 0
-		static int color = MY_RED;
-	static int myBrightness = 0;
-	
-	myBrightness += 1;
-	if (myBrightness >= gBrightness)
-	{
-		delay(2000);	// pause at maximum brightness
-		myBrightness = 0;
-		switch (color)
-		{
-			case MY_RED: color = MY_BLUE; break;
-			case MY_BLUE: color = MY_GREEN; break;
-			case MY_GREEN: color = MY_WHITE; break;
-			case MY_WHITE: color = MY_RED; break;
-			default: break;
-		}
-	}
-#endif
-	// step through colors and brightnesses
-	int color = MY_WHITE;
-    for (int col = 0; col < NUM_COLUMNS; col++) 
-    {
-		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
-		{
-			columns[col].SetMeterToColor(meter, color);
-		}
-    }
-	setAllBrightness(gBrightness);
-	showAllColumns();
-}
 
 
 // ----------------
 // - Ranger Debug -
 
-int rangerDebug_start(String arg) {
+int ranger_start(String arg) {
   
-  gThreshold = arg.toInt();
-  gBrightness = 128;
-  mode = PAT_RANGERDEBUG;
+  gColor = arg.toInt();
+  if (gColor < 1)
+	  gColor = 1;
+  if (gColor > MY_LASTCOLOR)
+	  gColor = MY_LASTCOLOR;
+  mode = PAT_RANGER;
   turnBlackLEDs();
-  turnOnLEDs();
+  
   return 1;
 }
 
-void rangerDebug() {
+void ranger() {
 	
   for (int col = 0; col < NUM_COLUMNS; col++) 
   {
 	  if (gDistance[col] > gThreshold)
-		columns[col].SetColumnToColor(MY_RED);
+		columns[col].SetColumnToColor(gColor);
 	  else
 		columns[col].SetColumnToColor(MY_BLACK);
   }
@@ -468,8 +484,8 @@ void rangerDebug() {
 
 int chase_start(String arg) {
   mode = PAT_CHASE;
-  turnOnLEDs();
   gChaseMode = arg.toInt();
+  gDelay = 1000;
   return 1;  
 }
 
@@ -477,7 +493,6 @@ void chase_pat() {
   static int curMeter = 0;
   static int curColumn = 0;
   static int curColor = 1;
-  int delayMsecs = 250;
   
   turnBlackLEDs();
 	  switch (gChaseMode)
@@ -488,7 +503,6 @@ void chase_pat() {
 			 	 curColor = 1;
 		  	if (curColumn >= NUM_COLUMNS)
 			  	curColumn = 0;
-			delayMsecs = 1000;
 			break;
 		case 1:
 		default:
@@ -500,35 +514,34 @@ void chase_pat() {
 		 	 curColor = 1;
 	  	if (curMeter++ >= NUM_METERS_PER_COLUMN)
 		  	curMeter = 0;
-		delayMsecs = 1000;
 		break;
 	  }
   showAllColumns();
-  delay(delayMsecs); 
+  delay(gDelay); 
 }
 
 int test_start(String arg) {
-  mode = PAT_TEST;
-  turnOnLEDs();
-  return 1;  
+    gColor = arg.toInt();
+    if (gColor < 0)
+  	  gColor = 0;
+    if (gColor > MY_LASTCOLOR)
+  	  gColor = MY_LASTCOLOR;
+  	gDelay = 1000;
+	turnBlackLEDs();
+  	mode = PAT_TEST;
+  	return 1;  
 }
 
 void test_one_color(int color)
 {
-    turnBlackLEDs();
-	for (int bright = 63; bright <= 255; bright+= 64)
-    {
-		for (int col = 0; col < NUM_COLUMNS; col++) 
-    	{
-			columns[col].SetColumnToColor(color);
-    	}
-		setAllBrightness(bright);
-		showAllColumns();
-		delay(2000);
+	for (int col = 0; col < NUM_COLUMNS; col++) 
+	{
+		columns[col].SetColumnToColor(color);
 	}
 }
 
 void test_pat() {
-	test_one_color(MY_RED);
-	test_one_color(MY_WHITE);
+	test_one_color(gColor);
+    showAllColumns();
+	delay(gDelay);
 }

@@ -46,6 +46,7 @@ public:
     MeterColumn(Adafruit_DotStar* pDotStars);
     void SetDotStars(Adafruit_DotStar* pDotStars);
     
+	
     // sets the individual LED specified by ledIndex (0..NUM_LEDS_PER_COLUMN) to a certain color
     void SetLEDToColor(byte ledIndex, int color);
     void SetLEDToRGB(byte ledIndex, RgbColor rgbColor);
@@ -71,6 +72,7 @@ public:
     
     // Test Routines
     void TestNextLED();
+	RgbColor ColorToRGB(int color);
     
     
 private:

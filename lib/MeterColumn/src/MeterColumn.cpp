@@ -32,6 +32,12 @@ void MeterColumn::SetDotStars(Adafruit_DotStar* pDotStars)
     _pDotStars = pDotStars;
 }
 
+RgbColor MeterColumn::ColorToRGB(int color)
+{
+	byte hue = (byte)color;
+    RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
+	return rgb;
+}
 
 // sets the individual LED specified by ledIndex (0..NUM_LEDS_PER_POLE) to a certain color
 void MeterColumn::SetLEDToColor(byte ledIndex, int color)
@@ -57,8 +63,8 @@ void MeterColumn::SetLEDToColor(byte ledIndex, int color)
             else
             {
                 hue = color-1;	// color must be 1..256 at this point
-		        RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
-		        _pDotStars->setPixelColor(ledIndex, rgb.r, rgb.g, rgb.b);
+			    RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
+		        _pDotStars->setPixelColor(ledIndex, rgb.r, rgb.b, rgb.g);
             }
             break;
     }
@@ -69,7 +75,7 @@ void MeterColumn::SetLEDToRGB(byte ledIndex, RgbColor rgbColor)
 {
     if (ledIndex >= NUM_LEDS_PER_COLUMN)  // bounds check
         return;
-    _pDotStars->setPixelColor(ledIndex, rgbColor.r, rgbColor.g, rgbColor.b);
+    _pDotStars->setPixelColor(ledIndex, rgbColor.r, rgbColor.b, rgbColor.g);
 }
 
 // set the meter on the column to a certain color.
