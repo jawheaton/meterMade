@@ -37,7 +37,10 @@
 #define MY_RED 258
 #define MY_GREEN 259
 #define MY_BLUE 260
-#define MY_LASTCOLOR MY_BLUE
+#define MY_YELLOW 261
+#define MY_CYAN 262
+#define MY_MAGENTA 263
+#define MY_LASTCOLOR MY_MAGENTA
 
 
 class MeterColumn {

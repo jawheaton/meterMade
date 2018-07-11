@@ -29,16 +29,16 @@
 #define BAT_LVL A6
 
 Adafruit_DotStar strips[] = {
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK2, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK3, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK4, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK5, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK6, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK7, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK8, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK9, DOTSTAR_BRG),
-  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK10, DOTSTAR_BRG)
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK2, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK3, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK4, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK5, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK6, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK7, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK8, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK9, DOTSTAR_BGR),
+  Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK10, DOTSTAR_BGR)
 };
 
 MeterColumn columns[NUM_COLUMNS];
@@ -55,7 +55,7 @@ MeterColumn columns[NUM_COLUMNS];
 
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
-int gBrightness = 128;
+int gBrightness = 255;
 int gDistance[NUM_DISTANCE_SENSORS];
 int gChaseMode = 0;
 int gRainbowMode = 0;
@@ -65,7 +65,7 @@ byte gHue = 0;
 int gColor = 0;
 int	gThreshold = 2500;
 int gDelay = 250;
-int gDebug = 0;
+int gDebug = 1;
 
 void setup() {
   Serial.begin(9600);
@@ -100,7 +100,6 @@ void setup() {
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
     strips[i].begin();
     strips[i].setBrightness(gBrightness);
-    strips[i].show();
   }
 
   // Decalre LED pwer control as output
@@ -122,7 +121,7 @@ void setup() {
 
   // Give everying a moment.
   delay(100);
-  rainbow_start("");
+  random_start("0");
   // Start the default program
   //rangerDebug_start("");
   //turnOffLEDs(); // or start with all LEDs off
@@ -325,8 +324,7 @@ int rainbow_start(String arg)
   gRainbowMode = arg.toInt();
   mode = PAT_RAINBOW;
   gColor = 1;
-  gDelay = 500;
-  turnOnLEDs();
+  gDelay = 1000;
   return 1;
 }
 
@@ -362,18 +360,18 @@ int random_start(String arg)
   gRandomMode = arg.toInt();
   if (gRandomMode < 0)
 	  gRandomMode = 0;
-  if (gRandomMode > 255)
-	  gRandomMode = 255;
-if (gDebug)
-{
-	RgbColor rgb = columns[0].ColorToRGB(gRandomMode);
-	Serial.print("random color: ");
-	Serial.print(gRandomMode);
-	Serial.print(" r: "); Serial.print(rgb.r);
-	Serial.print(" g: "); Serial.print(rgb.g);
-	Serial.print(" b: "); Serial.print(rgb.b);
-	Serial.println();
-}
+  if (gRandomMode > MY_LASTCOLOR)
+	  gRandomMode = MY_LASTCOLOR;
+  if (gDebug)
+  {
+	  RgbColor rgb = columns[0].ColorToRGB(gRandomMode);
+	  Serial.print("random color: ");
+	  Serial.print(gRandomMode);
+	  Serial.print(" r: "); Serial.print(rgb.r);
+	  Serial.print(" g: "); Serial.print(rgb.g);
+	  Serial.print(" b: "); Serial.print(rgb.b);
+	  Serial.println();
+  }
   mode = PAT_RANDOM;
   turnOnLEDs();
   return 1;

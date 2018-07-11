@@ -34,8 +34,28 @@ void MeterColumn::SetDotStars(Adafruit_DotStar* pDotStars)
 
 RgbColor MeterColumn::ColorToRGB(int color)
 {
-	byte hue = (byte)color;
-    RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
+	RgbColor rgb;
+    switch(color)
+    {
+        case MY_BLACK:  rgb = RgbColor(0,0,0); break;     // set to BLACK - All Off
+        case MY_WHITE:  rgb = RgbColor(255,255,255); break; // All on - WHITE
+        case MY_RED:    rgb = RgbColor(255,0,0); break; // All RED
+        case MY_GREEN:  rgb = RgbColor(0,255,0); break; // All GREEN
+        case MY_BLUE:   rgb = RgbColor(0,0,255); break; // All BLUE
+        case MY_YELLOW: rgb = RgbColor(255,255,0); break; // All YELLOW
+        case MY_CYAN:   rgb = RgbColor(0,255,255); break; 
+        case MY_MAGENTA: rgb = RgbColor(255,0,255); break; 
+        default:
+            if (color > MY_LASTCOLOR)   // bounds checking error - undefined color - turn black
+            {
+               rgb = RgbColor(0,0,0);
+            }
+            else
+            {
+				rgb = HsvToRgb(HsvColor(color-1, 255, 255)); 
+            }
+			break;
+    }
 	return rgb;
 }
 
@@ -43,31 +63,14 @@ RgbColor MeterColumn::ColorToRGB(int color)
 void MeterColumn::SetLEDToColor(byte ledIndex, int color)
 {
     byte hue = 0;	// when not black = 0, or white = 257, we used a byte value for hue mapping (0..255)
-    
+    RgbColor rgb;
+	
     if (ledIndex >= NUM_LEDS_PER_COLUMN)  // bounds check
         return;
     
     // map myColor into a FastLED hue or an RGB setting
-    switch(color)
-    {
-        case MY_BLACK:  _pDotStars->setPixelColor(ledIndex, 0, 0, 0);  break;     // set to BLACK - All Off
-        case MY_WHITE:  _pDotStars->setPixelColor(ledIndex, 255,255,255); break; // All on - WHITE
-        case MY_RED:    _pDotStars->setPixelColor(ledIndex, 255,0,0); break; // All RED
-        case MY_GREEN:  _pDotStars->setPixelColor(ledIndex, 0,255,0); break; // All GREEN
-        case MY_BLUE:   _pDotStars->setPixelColor(ledIndex, 0,0,255); break; // All BLUE
-        default:
-            if (color > MY_LASTCOLOR)   // bounds checking error - undefined color - turn black
-            {
-                _pDotStars->setPixelColor(ledIndex, 0, 0, 0);
-            }
-            else
-            {
-                hue = color-1;	// color must be 1..256 at this point
-			    RgbColor rgb = HsvToRgb(HsvColor(hue, 255, 255));
-		        _pDotStars->setPixelColor(ledIndex, rgb.r, rgb.g, rgb.b);
-            }
-            break;
-    }
+	rgb = ColorToRGB(color);
+	_pDotStars->setPixelColor(ledIndex, rgb.r, rgb.g, rgb.b);
     
 }
 
