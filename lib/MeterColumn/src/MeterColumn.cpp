@@ -48,11 +48,11 @@ RgbColor MeterColumn::ColorToRGB(int color)
         default:
             if (color > MY_LASTCOLOR)   // bounds checking error - undefined color - turn black
             {
-               rgb = RgbColor(0,0,0);
+              rgb = RgbColor(0,0,0);
             }
             else
             {
-				rgb = HsvToRgb(HsvColor(color-1, 255, 255)); 
+				      rgb = HsvToRgb(HsvColor(color-1, 255, 255)); 
             }
 			break;
     }
@@ -62,7 +62,6 @@ RgbColor MeterColumn::ColorToRGB(int color)
 // sets the individual LED specified by ledIndex (0..NUM_LEDS_PER_POLE) to a certain color
 void MeterColumn::SetLEDToColor(byte ledIndex, int color)
 {
-    byte hue = 0;	// when not black = 0, or white = 257, we used a byte value for hue mapping (0..255)
     RgbColor rgb;
 	
     if (ledIndex >= NUM_LEDS_PER_COLUMN)  // bounds check
@@ -74,11 +73,37 @@ void MeterColumn::SetLEDToColor(byte ledIndex, int color)
     
 }
 
+void MeterColumn::SetLEDToRGB(byte ledIndex, byte r, byte g, byte b)
+{
+  if (ledIndex >= NUM_LEDS_PER_COLUMN) return; // bounds check        
+  _pDotStars->setPixelColor(ledIndex, r, g, b);
+}
+
 void MeterColumn::SetLEDToRGB(byte ledIndex, RgbColor rgbColor)
 {
-    if (ledIndex >= NUM_LEDS_PER_COLUMN)  // bounds check
-        return;
-    _pDotStars->setPixelColor(ledIndex, rgbColor.r, rgbColor.g, rgbColor.b);
+    SetLEDToRGB(ledIndex, rgbColor.r, rgbColor.g, rgbColor.b);
+}
+
+void MeterColumn::SetLEDToHSV(byte ledIndex, byte h, byte s, byte v)
+{
+  SetLEDToRGB(ledIndex, HsvToRgb(HsvColor(h, s, v)));
+}
+
+
+// Set Meters to a solid color
+
+void MeterColumn::SetMeterToRGBWithMask(byte meter, byte r, byte g, byte b, byte mask)
+{
+    int ledIndex = meter*NUM_LEDS_PER_METER;
+    
+    if (mask & 0b0001)
+        SetLEDToRGB(ledIndex+3, r, g, b);
+    if (mask & 0b0010)
+        SetLEDToRGB(ledIndex+2, r, g, b);
+    if (mask & 0b0100)
+        SetLEDToRGB(ledIndex+1, r, g, b);
+    if (mask & 0b1000)
+        SetLEDToRGB(ledIndex, r, g, b);
 }
 
 // set the meter on the column to a certain color.
@@ -86,71 +111,69 @@ void MeterColumn::SetMeterToColorWithMask(byte meter, int color, byte mask)
 {
     int ledIndex = meter*NUM_LEDS_PER_METER;
     
-    if (mask & 0x1)
+    if (mask & 0b0001)
         SetLEDToColor(ledIndex+3, color);
-    if (mask & 0x2)
+    if (mask & 0b0010)
         SetLEDToColor(ledIndex+2, color);
-    if (mask & 0x4)
+    if (mask & 0b0100)
         SetLEDToColor(ledIndex+1, color);
-    if (mask & 0x8)
+    if (mask & 0b1000)
         SetLEDToColor(ledIndex, color);
 }
 
-void MeterColumn::SetMeterToRGBWithMask(byte meter, RgbColor rgbColor, byte mask)
-{
-    int ledIndex = meter*NUM_LEDS_PER_METER;
-    
-    if (mask & 0x1)
-        SetLEDToRGB(ledIndex+3, rgbColor);
-    if (mask & 0x2)
-        SetLEDToRGB(ledIndex+2, rgbColor);
-    if (mask & 0x4)
-        SetLEDToRGB(ledIndex+1, rgbColor);
-    if (mask & 0x8)
-        SetLEDToRGB(ledIndex, rgbColor);
-
-}
 void MeterColumn::SetMeterToColor(byte meter, int color)
 {
     SetMeterToColorWithMask(meter, color, MASK_1111);
 }
 
+void MeterColumn::SetMeterToHSV(byte meter, byte h, byte s, byte v)
+{
+    RgbColor rgb = HsvToRgb(HsvColor(h, s, v));
+    SetMeterToRGBWithMask(meter, rgb.r, rgb.g, rgb.b, MASK_1111);
+}
+
+void MeterColumn::SetMeterToRGB(byte meter, byte r, byte g, byte b)
+{
+    SetMeterToRGBWithMask(meter, r, g, b, MASK_1111);
+}
+
 void MeterColumn::SetMeterToRGB(byte meter, RgbColor rgbColor)
 {
-    SetMeterToRGBWithMask(meter, rgbColor, MASK_1111);
+    SetMeterToRGBWithMask(meter, rgbColor.r, rgbColor.g, rgbColor.b, MASK_1111);
 }
 
-void MeterColumn::Set7MetersToColor(int color)
-{
-	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
-	{
-	    SetMeterToColorWithMask(i, color, MASK_1111);		
-	}
-}
+// void MeterColumn::Set7MetersToColor(int color)
+// {
+// 	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+// 	{
+// 	    SetMeterToColorWithMask(i, color, MASK_1111);		
+// 	}
+// }
+// 
+// void MeterColumn::Set7MetersToRGB(RgbColor rgbColor)
+// {
+// 	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+// 	{
+// 	    SetMeterToRGBWithMask(i, rgbColor, MASK_1111);	
+// 	}
+// }
+// 
+// void MeterColumn::Set7MetersToColorWithMask(int color, byte mask)
+// {
+// 	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+// 	{
+// 	    SetMeterToColorWithMask(i, color, mask);		
+// 	}
+// }
+// 
+// void MeterColumn::Set7MetersToRGBWithMask(RgbColor rgbColor, byte mask)
+// {
+// 	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
+// 	{
+// 	    SetMeterToRGBWithMask(i, rgbColor, mask);	
+// 	}
+// }
 
-void MeterColumn::Set7MetersToRGB(RgbColor rgbColor)
-{
-	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
-	{
-	    SetMeterToRGBWithMask(i, rgbColor, MASK_1111);	
-	}
-}
-
-void MeterColumn::Set7MetersToColorWithMask(int color, byte mask)
-{
-	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
-	{
-	    SetMeterToColorWithMask(i, color, mask);		
-	}
-}
-
-void MeterColumn::Set7MetersToRGBWithMask(RgbColor rgbColor, byte mask)
-{
-	for (int i=2; i<NUM_METERS_PER_COLUMN; i++)
-	{
-	    SetMeterToRGBWithMask(i, rgbColor, mask);	
-	}
-}
 // Set entire column to color
 void MeterColumn::SetColumnToColorWithMask(int color, byte mask)
 {

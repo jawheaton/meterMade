@@ -55,7 +55,7 @@ MeterColumn columns[NUM_COLUMNS];
 
 uint8_t mode = PAT_RAINBOW;
 bool ledPower = false;
-int gBrightness = 255;
+int gBrightness = 128;
 int gDistance[NUM_DISTANCE_SENSORS];
 int gChaseMode = 0;
 int gRainbowMode = 0;
@@ -84,10 +84,10 @@ void setup() {
   Particle.function("TurnOff", turnOff);
 
   // Every pattern should register a start funtion here.
-  Particle.function("SetBright", brightness_start);
-  Particle.function("SetDelay", delay_start);
-  Particle.function("SetThreshold", threshold_start);
-  Particle.function("SetDebug", debug_start);
+  Particle.function("SetBright", setBrightness);
+  Particle.function("SetDelay", setDelay);
+  Particle.function("SetThreshold", setThreshold);
+  Particle.function("SetDebug", setDebug);
   
   Particle.function("Rainbow", rainbow_start);
   Particle.function("Chase", chase_start);
@@ -121,7 +121,8 @@ void setup() {
 
   // Give everying a moment.
   delay(100);
-  random_start("0");
+  rainbow_start("0");
+  
   // Start the default program
   //rangerDebug_start("");
   //turnOffLEDs(); // or start with all LEDs off
@@ -257,6 +258,18 @@ void inc_gColor()
 		gColor = 1;
 }
 
+void debugPrint() {
+  if (gDebug) {
+		RgbColor rgb = columns[0].ColorToRGB(gColor);
+		Serial.print("rainbow color: ");
+		Serial.print(gColor);
+		Serial.print(" r: "); Serial.print(rgb.r);
+		Serial.print(" g: "); Serial.print(rgb.g);
+		Serial.print(" b: "); Serial.print(rgb.b);
+		Serial.println();
+	}
+}
+
 // =============
 // = PATTERNS! =
 // =============
@@ -271,7 +284,7 @@ void inc_gColor()
 // these are just routines that set a variable
 // they don't change the current pattern.
 
-int brightness_start(String arg) {
+int setBrightness(String arg) {
   
   gBrightness = arg.toInt();
   if (gBrightness < 0)
@@ -283,7 +296,7 @@ int brightness_start(String arg) {
   return 1;
 }
 
-int delay_start(String arg) {
+int setDelay(String arg) {
   
   gDelay = arg.toInt();
   if (gDelay < 0)
@@ -294,7 +307,7 @@ int delay_start(String arg) {
   return 1;
 }
 
-int threshold_start(String arg) {
+int setThreshold(String arg) {
   
   gThreshold = arg.toInt();
   if (gThreshold < 0)
@@ -305,7 +318,7 @@ int threshold_start(String arg) {
   return 1;
 }
 
-int debug_start(String arg) {
+int setDebug(String arg) {
 	RgbColor rgb;
 	
   	gDebug = arg.toInt();
@@ -319,6 +332,8 @@ int debug_start(String arg) {
 // -----------
 // - RAINBOW -
 
+uint8_t rainbow_hue = 0;
+
 int rainbow_start(String arg) 
 {
   gRainbowMode = arg.toInt();
@@ -330,28 +345,22 @@ int rainbow_start(String arg)
 
 void rainbow() 
 {
-	if (gDebug)
-	{
-		RgbColor rgb = columns[0].ColorToRGB(gColor);
-		Serial.print("rainbow color: ");
-		Serial.print(gColor);
-		Serial.print(" r: "); Serial.print(rgb.r);
-		Serial.print(" g: "); Serial.print(rgb.g);
-		Serial.print(" b: "); Serial.print(rgb.b);
-		Serial.println();
-	}
+  rainbow_hue++;
 	switch(gRainbowMode)
 	{
 		default:
-			for (int col = 0; col < NUM_COLUMNS; col++) 
-			{
-				columns[col].SetColumnToColor(gColor);
+			for (int col = 0; col < NUM_COLUMNS; col++)
+      {
+        byte colHue = 255*col/NUM_COLUMNS;
+        for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
+          byte meterHue = 255*i/NUM_METERS_PER_COLUMN;
+          columns[col].SetMeterToHSV(i, rainbow_hue + colHue + meterHue, 255, 255);
+        }
 			}
-			inc_gColor();
 		break;
 	}
-    showAllColumns();
-    delay(gDelay);
+  showAllColumns();
+  delay(25);
 }
 
 //////////////////////////////////////////////////////
@@ -362,25 +371,17 @@ int random_start(String arg)
 	  gRandomMode = 0;
   if (gRandomMode > MY_LASTCOLOR)
 	  gRandomMode = MY_LASTCOLOR;
-  if (gDebug)
-  {
-	  RgbColor rgb = columns[0].ColorToRGB(gRandomMode);
-	  Serial.print("random color: ");
-	  Serial.print(gRandomMode);
-	  Serial.print(" r: "); Serial.print(rgb.r);
-	  Serial.print(" g: "); Serial.print(rgb.g);
-	  Serial.print(" b: "); Serial.print(rgb.b);
-	  Serial.println();
-  }
+  
   mode = PAT_RANDOM;
+  debugPrint();
   turnOnLEDs();
   return 1;
 }
 
 void random_pat()
 {
-    for (int col = 0; col < NUM_COLUMNS; col++) 
-    {
+  for (int col = 0; col < NUM_COLUMNS; col++) 
+  {
 		for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++)
 		{
 			int color;
@@ -390,7 +391,7 @@ void random_pat()
 				color = gRandomMode;
 			columns[col].SetMeterToColor(meter, color);
 		}
-    }
+  }
 	showAllColumns();
 	delay(gDelay);
 }
