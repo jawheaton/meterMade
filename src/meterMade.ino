@@ -67,6 +67,7 @@ int gColor = 0;
 int	gThreshold = 2500;
 int gDelay = 250;
 int gDebug = 1;
+uint8_t gRainbow_hue = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -143,16 +144,16 @@ void loop() {
       rainbow();	break;
     case PAT_RANGER:
       ranger();break;
-	case PAT_CYLON:
+	  case PAT_CYLON:
       cylon2();		break;
-	case PAT_RANDOM:
-	  random_pat();		break;
-	case PAT_CHASE:
-	  chase_pat();		break;
-	case PAT_TEST:
-	  test_pat(); break;
-	default:
-	 rainbow(); break;  
+	  case PAT_RANDOM:
+	    random_pat();		break;
+	  case PAT_CHASE:
+	    chase_pat();		break;
+	  case PAT_TEST:
+	    test_pat(); break;
+	  default:
+	    rainbow(); break;  
   }
 }
 
@@ -270,17 +271,6 @@ void debugPrint() {
 	}
 }
 
-// =============
-// = PATTERNS! =
-// =============
-
-// All pattern code and variables should be prefixed with their name and an underscore.
-// There should be a `int pattern_name_start(String arg)` function for every pattern that
-// is exposed in `setup()` via `Particle.function()`. The start function should simply
-// set the `mode`, call `turnOnLEDs()` and `return 1`, as well as what other
-// initialization the pattern may require.
-
-
 // these are just routines that set a variable
 // they don't change the current pattern.
 
@@ -328,12 +318,19 @@ int setDebug(String arg) {
   return 1;
 }
 
+// =============
+// = PATTERNS! =
+// =============
+
+// All pattern code and variables should be prefixed with their name and an underscore.
+// There should be a `int pattern_name_start(String arg)` function for every pattern that
+// is exposed in `setup()` via `Particle.function()`. The start function should simply
+// set the `mode`, call `turnOnLEDs()` and `return 1`, as well as what other
+// initialization the pattern may require.
 
 // -----------
 // - RAINBOW -
-
-uint8_t rainbow_hue = 0;
-
+///////////////////////////////////////////
 int rainbow_start(String arg) 
 {
   turnOnLEDs();
@@ -346,7 +343,7 @@ int rainbow_start(String arg)
 
 void rainbow() 
 {
-  rainbow_hue++;
+  gRainbow_hue++;
 	switch(gRainbowMode)
 	{
 		default:
@@ -355,7 +352,7 @@ void rainbow()
         byte colHue = 255*col/NUM_COLUMNS;
         for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
           byte meterHue = 255*i/NUM_METERS_PER_COLUMN;
-          columns[col].SetMeterToHSV(i, rainbow_hue + colHue + meterHue, 255, 255);
+          columns[col].SetMeterToHSV(i, gRainbow_hue + colHue + meterHue, 255, 255);
         }
 			}
 		break;
@@ -452,11 +449,9 @@ void cylon2()
 }
 
 
-
-
 // ----------------
 // - Ranger Debug -
-
+/////////////////////////////////////////////////////
 int ranger_start(String arg) {
   
   gColor = arg.toInt();
@@ -482,6 +477,7 @@ void ranger() {
   showAllColumns();
 }
 
+//////////////////////////////////////////////////
 int chase_start(String arg) {
   mode = PAT_CHASE;
   gChaseMode = arg.toInt();
@@ -520,6 +516,7 @@ void chase_pat() {
   delay(gDelay); 
 }
 
+//////////////////////////////////////////////////
 int test_start(String arg) {
     gColor = arg.toInt();
     if (gColor < 0)
