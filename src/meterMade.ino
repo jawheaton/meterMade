@@ -4,29 +4,30 @@
 #define NUM_DISTANCE_SENSORS 10
 
 #define LED_PWR D7
-#define LED_DAT C0
-#define LED_CLK1 C1
-#define LED_CLK2 C2
-#define LED_CLK3 C3
-#define LED_CLK4 C4
-#define LED_CLK5 C5
-#define LED_CLK6 D0
-#define LED_CLK7 D1
-#define LED_CLK8 D2
-#define LED_CLK9 D3
-#define LED_CLK10 D4
+#define LED_DAT D6
+#define LED_CLK1 C0
+#define LED_CLK2 C1
+#define LED_CLK3 C2
+#define LED_CLK4 C3
+#define LED_CLK5 C4
+#define LED_CLK6 C5
+#define LED_CLK7 D0
+#define LED_CLK8 D1
+#define LED_CLK9 D2
+#define LED_CLK10 D3
 
-#define RNG_1	A4
-#define RNG_2	A5
-#define RNG_3	B2
-#define RNG_4	B3
-#define RNG_5	B4
-#define RNG_6	B5
-#define RNG_7	A0
-#define RNG_8	A1
-#define RNG_9	A2
-#define RNG_10	A3
+#define RNG_1	A5
+#define RNG_2	A4
+#define RNG_3	A3
+#define RNG_4	A2
+#define RNG_5	A1
+#define RNG_6	A0
+#define RNG_7	B5
+#define RNG_8	B4
+#define RNG_9	B3
+#define RNG_10 B2
 #define BAT_LVL A6
+#define SLR_LVL A7
 
 Adafruit_DotStar strips[] = {
   Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1, DOTSTAR_BGR),
@@ -122,7 +123,6 @@ void setup() {
   // Give everying a moment.
   delay(100);
   rainbow_start("0");
-  
   // Start the default program
   //rangerDebug_start("");
   //turnOffLEDs(); // or start with all LEDs off
@@ -336,6 +336,7 @@ uint8_t rainbow_hue = 0;
 
 int rainbow_start(String arg) 
 {
+  turnOnLEDs();
   gRainbowMode = arg.toInt();
   mode = PAT_RAINBOW;
   gColor = 1;
