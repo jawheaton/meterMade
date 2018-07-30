@@ -50,11 +50,12 @@ MeterColumn columns[NUM_COLUMNS];
 #define PAT_RANGER 2
 #define PAT_CYLON 3
 #define PAT_RANDOM 4
-#define PAT_CHASE 5
+#define PAT_CHASE_UP 5
 #define PAT_TEST 6
+#define PAT_CHASE_AROUND 7
 
 
-uint8_t mode = PAT_RAINBOW;
+uint8_t gPattern = PAT_RAINBOW;
 bool ledPower = false;
 int gBrightness = 128;
 int gDistance[NUM_DISTANCE_SENSORS];
@@ -62,6 +63,7 @@ int gChaseMode = 0;
 int gRainbowMode = 0;
 int gRandomMode = 0;
 int gBatLvl = 0;
+int gSlrLvl = 0;
 byte gHue = 0;
 int gColor = 0;
 int	gThreshold = 2500;
@@ -78,6 +80,7 @@ void setup() {
 
   // Expose cloud variables (up to 20)
   Particle.variable("BatLvl", gBatLvl);
+  Particle.variable("SlrLvl", gSlrLvl);
   Particle.variable("Brightness", gBrightness);
   Particle.variable("Delay", gDelay);
   Particle.variable("Debug", gDebug);
@@ -92,7 +95,8 @@ void setup() {
   Particle.function("SetDebug", setDebug);
   
   Particle.function("Rainbow", rainbow_start);
-  Particle.function("Chase", chase_start);
+  Particle.function("ChaseUp", chase_up_start);
+  Particle.function("ChaseAround", chase_around_start);
   Particle.function("Ranger", ranger_start);
   Particle.function("Cylon", cylon_start);
   Particle.function("Random", random_start);
@@ -120,10 +124,11 @@ void setup() {
   pinMode(RNG_10, INPUT);
 
   pinMode(BAT_LVL, INPUT);
+  pinMode(SLR_LVL, INPUT);
 
   // Give everying a moment.
   delay(100);
-  rainbow_start("0");
+  turnOffLEDs();
   // Start the default program
   //rangerDebug_start("");
   //turnOffLEDs(); // or start with all LEDs off
@@ -134,11 +139,13 @@ void loop() {
 
   readDistances();
   readBatLvl();
-  
-  switch (mode) 
+  readSlrLvl();
+
+  switch (gPattern) 
   {
     case PAT_TURNOFF:	
-	  turnOffLEDs();
+	    turnOffLEDs();
+      delay(1000);
       break;				// taken care of above?
     case PAT_RAINBOW:
       rainbow();	break;
@@ -148,8 +155,10 @@ void loop() {
       cylon2();		break;
 	  case PAT_RANDOM:
 	    random_pat();		break;
-	  case PAT_CHASE:
-	    chase_pat();		break;
+	  case PAT_CHASE_UP:
+	    chase_up_pat();		break;
+	  case PAT_CHASE_AROUND:
+	    chase_around_pat();		break;
 	  case PAT_TEST:
 	    test_pat(); break;
 	  default:
@@ -160,7 +169,13 @@ void loop() {
 void readBatLvl()
 {
 	gBatLvl = analogRead(BAT_LVL);
-	// Serial.print("Bat. Level: "); Serial.println(gBatLvl);
+	//Serial.print("Bat. Level: "); Serial.println(gBatLvl);
+}
+
+void readSlrLvl()
+{
+	gSlrLvl = analogRead(SLR_LVL);
+	//Serial.print("Solar. Level: "); Serial.println(gSlrLvl);
 }
 
 void readDistances()
@@ -188,10 +203,14 @@ void readDistances()
 // Cuts power to LEDs via the N-Channel MOSFET.
 void turnOffLEDs() 
 {
-  mode = PAT_TURNOFF;
+  gPattern = PAT_TURNOFF;
   
   turnBlackLEDs();  
+  showAllColumns();
   ledPower = false;
+
+  return;
+  /*
   digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
 
   // Set all LED data and clock pins to HIGH so these pins can't be used as GND by the LEDs.
@@ -206,6 +225,7 @@ void turnOffLEDs()
   digitalWrite(LED_CLK8, HIGH);
   digitalWrite(LED_CLK9, HIGH);
   digitalWrite(LED_CLK10, HIGH);
+  */
 }
 
 void turnBlackLEDs() 
@@ -220,10 +240,9 @@ void turnBlackLEDs()
 // Cloud exposable version of turnOffLEDs()
 int turnOff(String arg) 
 {
-  //turnOffLEDs();
-  mode = PAT_TURNOFF;
-  turnBlackLEDs();
-  showAllColumns();
+  turnOffLEDs();
+  gPattern = PAT_TURNOFF;
+  
   return 1;
 }
 
@@ -241,6 +260,7 @@ void showAllColumns()
     for (int col = 0; col < NUM_COLUMNS; col++) 
 	{
       strips[col].show();
+      //delay(1);
     }
 }
 
@@ -335,9 +355,9 @@ int rainbow_start(String arg)
 {
   turnOnLEDs();
   gRainbowMode = arg.toInt();
-  mode = PAT_RAINBOW;
+  gPattern = PAT_RAINBOW;
   gColor = 1;
-  gDelay = 1000;
+  gDelay = 25;
   return 1;
 }
 
@@ -358,7 +378,7 @@ void rainbow()
 		break;
 	}
   showAllColumns();
-  delay(25);
+  delay(gDelay);
 }
 
 //////////////////////////////////////////////////////
@@ -370,7 +390,7 @@ int random_start(String arg)
   if (gRandomMode > MY_LASTCOLOR)
 	  gRandomMode = MY_LASTCOLOR;
   
-  mode = PAT_RANDOM;
+  gPattern = PAT_RANDOM;
   debugPrint();
   turnOnLEDs();
   return 1;
@@ -398,7 +418,7 @@ void random_pat()
 int cylon_start(String arg) 
 {
   gColor = 0;
-  mode = PAT_CYLON;
+  gPattern = PAT_CYLON;
   turnOnLEDs();
   return 1;
 }
@@ -459,7 +479,7 @@ int ranger_start(String arg) {
 	  gColor = 1;
   if (gColor > MY_LASTCOLOR)
 	  gColor = MY_LASTCOLOR;
-  mode = PAT_RANGER;
+  gPattern = PAT_RANGER;
   turnBlackLEDs();
   
   return 1;
@@ -478,40 +498,48 @@ void ranger() {
 }
 
 //////////////////////////////////////////////////
-int chase_start(String arg) {
-  mode = PAT_CHASE;
-  gChaseMode = arg.toInt();
-  gDelay = 1000;
+int chase_up_start(String arg) {
+  gPattern = PAT_CHASE_UP;
+  gDelay = 250;
   return 1;  
 }
 
-void chase_pat() {
-  static int curMeter = 0;
+void chase_up_pat() {
+  static int curMeter = NUM_METERS_PER_COLUMN-1;
+  static int curColor = 1;
+  
+  turnBlackLEDs();
+  for (int i=0; i<NUM_COLUMNS; i++)
+  {
+    columns[i].SetMeterToColor(curMeter, curColor);
+  }
+  curColor += 8;
+  if (curColor >= MY_WHITE)
+    curColor = 1;
+  curMeter--;
+  if (curMeter < 0)
+    curMeter = NUM_METERS_PER_COLUMN-1;
+  showAllColumns();
+  delay(gDelay); 
+}
+
+int chase_around_start(String arg) {
+  gPattern = PAT_CHASE_AROUND;
+  gDelay = 250;
+  return 1;  
+}
+
+void chase_around_pat() {
   static int curColumn = 0;
   static int curColor = 1;
   
   turnBlackLEDs();
-	  switch (gChaseMode)
-	  {
-		  case 0:
-		  	columns[curColumn++].SetColumnToColor(curColor++);
-		  	if (curColor >= MY_WHITE)
-			 	 curColor = 1;
-		  	if (curColumn >= NUM_COLUMNS)
-			  	curColumn = 0;
-			break;
-		case 1:
-		default:
-		for (int i=0; i<NUM_COLUMNS; i++)
-		{
-			columns[i].SetMeterToColor(curMeter, curColor);
-		}
-	  	if (curColor++ >= MY_WHITE)
-		 	 curColor = 1;
-	  	if (curMeter++ >= NUM_METERS_PER_COLUMN)
-		  	curMeter = 0;
-		break;
-	  }
+  columns[curColumn++].SetColumnToColor(curColor);
+	if (curColumn >= NUM_COLUMNS)
+		curColumn = 0;
+  curColor += 8;
+  if (curColor >= MY_WHITE)
+    curColor = 1;
   showAllColumns();
   delay(gDelay); 
 }
@@ -525,7 +553,7 @@ int test_start(String arg) {
   	  gColor = MY_LASTCOLOR;
   	gDelay = 1000;
 	turnBlackLEDs();
-  	mode = PAT_TEST;
+  	gPattern = PAT_TEST;
   	return 1;  
 }
 
