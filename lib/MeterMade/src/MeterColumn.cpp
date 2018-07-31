@@ -17,21 +17,21 @@
 
 /**************************** Contruct MeterColumn  ****************************/
 MeterColumn::MeterColumn(void) {
-  _pDotStars = NULL;
+  leds = NULL;
 }
 
-MeterColumn::MeterColumn(Adafruit_DotStar* pDotStars) {
-  _pDotStars = pDotStars;
+MeterColumn::MeterColumn(Adafruit_DotStar* newLeds) {
+  leds = newLeds;
 }
 
 /***********************************/
-void MeterColumn::setDotStars(Adafruit_DotStar* pDotStars) {
-  _pDotStars = pDotStars;
+void MeterColumn::setDotStars(Adafruit_DotStar* newLeds) {
+  leds = newLeds;
 }
 
 void MeterColumn::ledRGB(byte ledIndex, byte r, byte g, byte b) {
   if (ledIndex >= NUM_LEDS_PER_COLUMN) return; // bounds check 
-  _pDotStars->setPixelColor(ledIndex, r, g, b);
+  leds->setPixelColor(ledIndex, r, g, b);
 }
 
 void MeterColumn::ledHSV(byte ledIndex, byte h, byte s, byte v) {

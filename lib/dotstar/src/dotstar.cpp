@@ -150,9 +150,7 @@ void Adafruit_DotStar::sw_spi_out(uint8_t n) { // Bitbang SPI write
     if(n & 0x80) pinSet(dataPin, HIGH);
     else         pinSet(dataPin, LOW);
     pinSet(clockPin, HIGH);
-    delayMicroseconds(5);
     pinSet(clockPin, LOW);
-    delayMicroseconds(5);
   }
 }
 

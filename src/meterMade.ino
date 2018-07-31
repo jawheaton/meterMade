@@ -1,8 +1,5 @@
 #include "MeterColumn.h"
 
-#define NUM_COLUMNS 10
-#define NUM_DISTANCE_SENSORS 10
-
 #define BAT_LVL A6
 #define SLR_LVL A7
 #define LED_PWR   D7
@@ -56,9 +53,9 @@ MeterColumn columns[NUM_COLUMNS];
 uint8_t mode = PAT_RAINBOW;
 bool gLedPower = false;
 uint8_t gBrightness = 128;
-int gDistance[NUM_DISTANCE_SENSORS];
+int gDistance[NUM_COLUMNS];
 int gSensorThreshold = 2500;
-bool gSensors[NUM_DISTANCE_SENSORS];
+bool gSensors[NUM_COLUMNS];
 int gDelay = 250;
 int gDebug = 1;
 
@@ -172,7 +169,7 @@ void readDistances() {
   gDistance[9] = analogRead(RNG_10);
   
   // Set the global sensor boolean values.
-  for (int i = 0; i < NUM_DISTANCE_SENSORS; i++) {
+  for (int i = 0; i < NUM_COLUMNS; i++) {
     gSensors[i] = gDistance[i] > gSensorThreshold;
   }
 }
