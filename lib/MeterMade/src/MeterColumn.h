@@ -30,8 +30,8 @@
 class MeterColumn {
 public:
     MeterColumn();
-    MeterColumn(Adafruit_DotStar* pDotStars);
-    void setDotStars(Adafruit_DotStar* pDotStars);
+    MeterColumn(Adafruit_DotStar* newLeds);
+    void setDotStars(Adafruit_DotStar* newLeds);
     Adafruit_DotStar* leds;        // pointer to array of NUM_LEDS_PER_COLUMN dotstar LEDS
     
     void ledRGB(byte ledIndex, byte r, byte g, byte b);

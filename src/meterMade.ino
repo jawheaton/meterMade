@@ -27,7 +27,6 @@
 #define RNG_9   B3
 #define RNG_10  B2
 
-
 Adafruit_DotStar strips[] = {
   Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1, DOTSTAR_BGR),
   Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK2, DOTSTAR_BGR),
@@ -43,14 +42,23 @@ Adafruit_DotStar strips[] = {
 
 MeterColumn columns[NUM_COLUMNS];
 
-// pattern mode
-#define PAT_RAINBOW 1
-#define PAT_RANGER 2
-#define PAT_CYLON 3
-#define PAT_RANDOM 4
+// Instantiate patterns
+#include "Rainbow.h"
+Rainbow patRainbow;
 
+#include "Sine.h"
+Sine patSine;
 
-uint8_t mode = PAT_RAINBOW;
+#include "Cylon.h"
+Cylon patCylon;
+
+PatBase patterns[] = {
+  patRainbow,
+  patSine,
+  patCylon
+};
+
+uint8_t pattern = 0;
 bool gLedPower = false;
 uint8_t gBrightness = 128;
 int gDistance[NUM_COLUMNS];
@@ -86,10 +94,10 @@ void setup() {
   Particle.function("turnOff", turnOffFunction);
   
   // Start patterns.
-  Particle.function("Rainbow", rainbow_start);
-  Particle.function("Ranger", ranger_start);
-  Particle.function("Cylon", cylon_start);
-  Particle.function("RandomColors", randomColors_start);
+  // Particle.function("Rainbow", rainbow_start);
+  // Particle.function("Ranger", ranger_start);
+  // Particle.function("Cylon", cylon_start);
+  // Particle.function("RandomColors", randomColors_start);
   
   // Initialize LED strips
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
@@ -118,6 +126,18 @@ void setup() {
   // Give everying a moment.
   delay(100);
   turnOff();
+  
+  delay(1000);
+  
+  for (int i=0; i<NUM_COLUMNS; i++) {
+    columns[i].setDotStars(&strips[i]);
+  }
+  
+  patRainbow.setColumns(&columns);
+  patSine.setColumns(&columns);
+  patCylon.setColumns(&columns);
+  
+  patterns[pattern].start();
 }
 
 // Simply animate the current mode.
@@ -134,18 +154,9 @@ void loop() {
   // Get a value for every sensor.
   readDistances();
   
-  switch (mode) {
-    case PAT_RAINBOW:
-      rainbow(); break;
-    case PAT_RANGER:
-      ranger(); break;
-    case PAT_CYLON:
-      cylon(); break;
-    case PAT_RANDOM:
-      randomColors(); break;
-    default:
-      rainbow(); break;  
-  }
+  
+  // TEMP
+  patterns[pattern].start();
 }
 
 void readBatLvl() {
@@ -251,125 +262,4 @@ int setDebug(String arg) {
   gDebug = arg.toInt();
   if (gDebug < 0) gDebug = 0;
   return 1;
-}
-
-// =============
-// = PATTERNS! =
-// =============
-
-// All pattern code and variables should be prefixed with their name and an underscore.
-// There should be a `int pattern_name_start(String arg)` function for every pattern that
-// is exposed in `setup()` via `Particle.function()`. The start function should simply
-// set the `mode`, call `turnOn()` and `return 1`, as well as what other
-// initialization the pattern may require.
-
-// -----------
-// - RAINBOW -
-///////////////////////////////////////////
-int rainbow_start(String arg)  {
-  turnOn();
-  mode = PAT_RAINBOW;
-  gDelay = 25;
-  return 1;
-}
-
-void rainbow() {
-  static uint8_t hue = 0;
-  
-  hue++;
-  for (int col = 0; col < NUM_COLUMNS; col++)  {
-    byte colHue = 255 * col / NUM_COLUMNS;
-    for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
-      byte meterHue = 255 * i / NUM_METERS_PER_COLUMN;
-      columns[col].meterHSV(i, hue + colHue + meterHue, 255, 255);
-    }
-  }
-  
-  showAllColumns();
-  delay(gDelay);
-}
-
-//////////////////////////////////////////////////////
-int randomColors_start(String arg) {
-  turnOn();
-  mode = PAT_RANDOM;
-  gDelay = 500;
-  return 1;
-}
-
-void randomColors() {
-  for (int col = 0; col < NUM_COLUMNS; col++) {
-    for (int meter = 0; meter < NUM_METERS_PER_COLUMN; meter++) {
-      columns[col].meterHSV(meter, random(0,255), 255, 255);
-    }
-  }
-  
-  showAllColumns();
-  delay(gDelay);
-}
-
-//////////////////////////////////////////////////////
-int cylon_start(String arg) {
-  turnOn();
-  mode = PAT_CYLON;
-  gDelay = 500;
-  return 1;
-}
-
-void cylon() {
-  static byte hue = 0;
-  static byte state = 0;
-  static byte mask = 0b1000;
-  
-  hue++;
-  for (int col = 0; col < NUM_COLUMNS; col++) {
-    for (int i=0; i<NUM_METERS_PER_COLUMN; i++) {
-      columns[col].meterRGB(i, 0, 0, 0);
-      columns[col].meterRGB(i, 255, 0, 0, mask);
-    }
-  }
-  
-  showAllColumns();
-  delay(gDelay);
-  
-  // increment mask to rotate LED back and forth
-  switch(state) {
-    case 0: mask = 0b0100; break;
-    case 1: mask = 0b0010; break;
-    case 2: mask = 0b0001; break;
-    case 3: mask = 0b0010; break;
-    case 4: mask = 0b0100; break;
-    case 5: mask = 0b1000; break;
-    default:
-      break;
-  }
-  
-  state++;
-  if (state >= 6) state = 0;
-}
-
-
-// ----------------
-// - Ranger Debug -
-/////////////////////////////////////////////////////
-int ranger_start(String arg) {
-  turnOn();
-  mode = PAT_RANGER;
-  gDelay = 50;
-  return 1;
-}
-
-void ranger() {
-  for (int col = 0; col < NUM_COLUMNS; col++) {
-    for (int i=0; i<NUM_METERS_PER_COLUMN; i++) {
-      if (gSensors[col]) {
-        columns[col].meterRGB(i, 255, 0, 0);
-      } else {
-        columns[col].meterRGB(i, 16, 16, 16);
-      }
-    }
-  }
-  
-  showAllColumns();
-  delay(gDelay);
 }
