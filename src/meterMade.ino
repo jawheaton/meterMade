@@ -133,9 +133,9 @@ void setup() {
     columns[i].setDotStars(&strips[i]);
   }
   
-  patRainbow.setColumns(&columns);
-  patSine.setColumns(&columns);
-  patCylon.setColumns(&columns);
+  patRainbow.setColumns((MeterColumn*) &columns);
+  patSine.setColumns((MeterColumn*) &columns);
+  patCylon.setColumns((MeterColumn*) &columns);
   
   patterns[pattern].start();
 }
@@ -153,7 +153,6 @@ void loop() {
   
   // Get a value for every sensor.
   readDistances();
-  
   
   // TEMP
   patterns[pattern].start();
