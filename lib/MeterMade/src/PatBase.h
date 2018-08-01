@@ -25,8 +25,8 @@ public:
   uint8_t cos8(uint8_t theta);
   
   // Get an 8 bit coordinate for a specific meter.
-  uint8_t x(uint8_t col, uint8_t meter);
-  uint8_t y(uint8_t col, uint8_t meter);
+  uint8_t getX(uint8_t col, uint8_t meter);
+  uint8_t getY(uint8_t col, uint8_t meter);
   
   // Override these
   void start();
