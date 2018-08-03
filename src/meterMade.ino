@@ -153,6 +153,9 @@ void loop() {
   
   // Get a value for every sensor.
   readDistances();
+  
+  // Animate the pattern.
+  patterns[gPattern].loop();
 }
 
 void readBatLvl() {
