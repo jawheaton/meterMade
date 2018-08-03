@@ -86,6 +86,7 @@ void setup() {
 void setupParticle() {
   // Variables getters.
   Particle.variable("brightness", gBrightness);
+  Particle.variable("pattern", gPattern);
   Particle.variable("threshold", gSensorThreshold);
   Particle.variable("batLvl", gBatLvl);
   Particle.variable("slrLvl", gSlrLvl);
@@ -209,14 +210,13 @@ void turnOff() {
 
 int startPattern(String arg) {
   uint8_t i = arg.toInt();
-  if (i >= 1 && i <= NUM_PATTERNS) {
+  if (i >= 0 && i < NUM_PATTERNS) {
     turnOn();
-    gPattern = i - 1;
+    gPattern = i;
     patterns[gPattern].start();
     return 1;
   } else {
-    // Return a negative number indicating the max integer you are allowed to pass in.
-    return -NUM_PATTERNS;
+    return -1;
   }
 }
 
