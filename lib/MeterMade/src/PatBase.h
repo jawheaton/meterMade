@@ -28,7 +28,7 @@ public:
   uint8_t getY(uint8_t col, uint8_t meter);
   
   // Override these
-  void start();
-  void loop();
+  virtual void start();
+  virtual void loop();
 };
 

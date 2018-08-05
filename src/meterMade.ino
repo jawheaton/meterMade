@@ -54,11 +54,7 @@ Cylon patCylon;
 
 #define NUM_PATTERNS 3
 
-PatBase patterns[] = {
-  patRainbow,
-  patSine,
-  patCylon
-};
+PatBase* patterns[NUM_PATTERNS];
 
 int gPattern = 0;
 bool gLedPower = false;
@@ -137,8 +133,12 @@ void setupSensors() {
 }
 
 void setupPatterns() {
+  patterns[0] = &patRainbow;
+  patterns[1] = &patSine;
+  patterns[2] = &patCylon;
+
   for (int i = 0; i < NUM_PATTERNS; i++) {
-    patterns[i].setColumns(columns);
+    patterns[i]->setColumns(columns);
   }
 }
 
@@ -157,7 +157,7 @@ void loop() {
   readDistances();
   
   // Send the currently triggered sensors to the pattern.
-  patterns[gPattern].setSensors(gSensors);
+  patterns[gPattern]->setSensors(gSensors);
   
   // for (int col = 0; col < NUM_COLUMNS; col++) {
   //   for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
@@ -167,8 +167,7 @@ void loop() {
   // showAllColumns();
   
   // Animate the pattern.
-  patterns[gPattern].loop();
-  showAllColumns();
+  patterns[gPattern]->loop();
 }
 
 void readBatLvl() {
@@ -231,7 +230,7 @@ int startPattern(String arg) {
   if (i >= 0 && i < NUM_PATTERNS) {
     turnOn();
     gPattern = i;
-    patterns[gPattern].start();
+    patterns[gPattern]->start();
     return 1;
   } else {
     return -1;

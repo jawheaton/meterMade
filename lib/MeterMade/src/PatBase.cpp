@@ -56,7 +56,7 @@ uint8_t PatBase::cos8(uint8_t theta) {
   return sin8(theta + 64);
 }
 
-uint8_t x(uint8_t col, uint8_t meter) {
+uint8_t PatBase::getX(uint8_t col, uint8_t meter) {
   uint8_t offset = 0;
   if (meter <= 1) offset = 255 / COLS / 3;
   if (meter == 0) offset = -offset;
@@ -64,7 +64,7 @@ uint8_t x(uint8_t col, uint8_t meter) {
   return offset + (col * 255) / COLS;
 }
 
-uint8_t y(uint8_t col, uint8_t meter) {
+uint8_t PatBase::getY(uint8_t col, uint8_t meter) {
   if (meter <= 1) return 255;
   return ((METERS - meter - 1) * 255) / (METERS - 2);
 }
@@ -86,7 +86,7 @@ void PatBase::loop() {
       columns[col].meterRGB(meter, 255, 0, 0);
     }
   }
-  
+
   show();
   delay(50);
 }
