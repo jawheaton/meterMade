@@ -60,9 +60,9 @@ PatBase patterns[] = {
   patCylon
 };
 
-uint8_t gPattern = 0;
+int gPattern = 0;
 bool gLedPower = false;
-uint8_t gBrightness = 128;
+int gBrightness = 128;
 int gDistance[NUM_COLUMNS];
 int gSensorThreshold = 2500;
 bool gSensors[NUM_COLUMNS];
@@ -85,6 +85,7 @@ void setup() {
 
 void setupParticle() {
   // Variables getters.
+  Particle.variable("power", gLedPower);
   Particle.variable("brightness", gBrightness);
   Particle.variable("pattern", gPattern);
   Particle.variable("threshold", gSensorThreshold);
@@ -136,9 +137,9 @@ void setupSensors() {
 }
 
 void setupPatterns() {
-  patRainbow.setColumns((MeterColumn*) &columns);
-  patSine.setColumns((MeterColumn*) &columns);
-  patCylon.setColumns((MeterColumn*) &columns);
+  for (int i = 0; i < NUM_PATTERNS; i++) {
+    patterns[i].setColumns(columns);
+  }
 }
 
 // Simply animate the current mode.
@@ -155,8 +156,19 @@ void loop() {
   // Get a value for every sensor.
   readDistances();
   
+  // Send the currently triggered sensors to the pattern.
+  patterns[gPattern].setSensors(gSensors);
+  
+  // for (int col = 0; col < NUM_COLUMNS; col++) {
+  //   for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
+  //     columns[col].meterRGB(i, 0,255,0);
+  //   }
+  // }
+  // showAllColumns();
+  
   // Animate the pattern.
   patterns[gPattern].loop();
+  showAllColumns();
 }
 
 void readBatLvl() {
@@ -190,22 +202,28 @@ void readDistances() {
 
 // Cuts power to LEDs via the N-Channel MOSFET.
 void turnOff() {
-  setAllToBlack();  
-  digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
+  for (int col = 0; col < NUM_COLUMNS; col++) {
+    for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
+      columns[col].meterRGB(i, 0,0,0);
+    }
+  }
+  showAllColumns();
+  
+  // digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
   gLedPower = false;
 
   // Set all LED data and clock pins to HIGH so these pins can't be used as GND by the LEDs.
-  digitalWrite(LED_DAT, HIGH);
-  digitalWrite(LED_CLK1, HIGH);
-  digitalWrite(LED_CLK2, HIGH);
-  digitalWrite(LED_CLK3, HIGH);
-  digitalWrite(LED_CLK4, HIGH);
-  digitalWrite(LED_CLK5, HIGH);
-  digitalWrite(LED_CLK6, HIGH);
-  digitalWrite(LED_CLK7, HIGH);
-  digitalWrite(LED_CLK8, HIGH);
-  digitalWrite(LED_CLK9, HIGH);
-  digitalWrite(LED_CLK10, HIGH);
+  // digitalWrite(LED_DAT, HIGH);
+  // digitalWrite(LED_CLK1, HIGH);
+  // digitalWrite(LED_CLK2, HIGH);
+  // digitalWrite(LED_CLK3, HIGH);
+  // digitalWrite(LED_CLK4, HIGH);
+  // digitalWrite(LED_CLK5, HIGH);
+  // digitalWrite(LED_CLK6, HIGH);
+  // digitalWrite(LED_CLK7, HIGH);
+  // digitalWrite(LED_CLK8, HIGH);
+  // digitalWrite(LED_CLK9, HIGH);
+  // digitalWrite(LED_CLK10, HIGH);
 }
 
 int startPattern(String arg) {
@@ -226,6 +244,7 @@ void setAllToBlack() {
       columns[col].meterRGB(i, 0,0,0);
     }
   }
+  showAllColumns();
 }
 
 // Cloud exposable version of turnOff()

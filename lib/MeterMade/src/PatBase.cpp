@@ -11,10 +11,6 @@ PatBase::PatBase(void) {
   sensors = NULL;
 }
 
-PatBase::PatBase(MeterColumn* newColumns) {
-  columns = newColumns;
-}
-
 /***********************************/
 void PatBase::setColumns(MeterColumn* newColumns) {
   columns = newColumns;

@@ -11,7 +11,6 @@
 class PatBase {
 public:
   PatBase();
-  PatBase(MeterColumn* columns);
   
   MeterColumn* columns; // pointer to array of column instances
   boolean* sensors;     // pointer to array of boolean sensor values
