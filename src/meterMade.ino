@@ -52,62 +52,76 @@ Sine patSine;
 #include "Cylon.h"
 Cylon patCylon;
 
+#define NUM_PATTERNS 3
+
 PatBase patterns[] = {
   patRainbow,
   patSine,
   patCylon
 };
 
-uint8_t pattern = 0;
+uint8_t gPattern = 0;
 bool gLedPower = false;
 uint8_t gBrightness = 128;
 int gDistance[NUM_COLUMNS];
 int gSensorThreshold = 2500;
 bool gSensors[NUM_COLUMNS];
-int gDelay = 250;
-int gDebug = 1;
 
 int gBatLvl = 0;
 int gSlrLvl = 0;
 
 void setup() {
   Serial.begin(9600);
-  
-  // Setup all LED strips.
-  for (int i=0; i<NUM_COLUMNS; i++) {
-    columns[i].setDotStars(&strips[i]);
-  }
 
-  // Expose cloud variables. (up to 20)
-  Particle.variable("batLvl", gBatLvl);
+  setupParticle();
+  setupLeds();
+  setupSensors();
+  setupPatterns();
+
+  // Give everying a moment.
+  delay(100);
+  turnOff();
+}
+
+void setupParticle() {
+  // Variables getters.
   Particle.variable("brightness", gBrightness);
-  Particle.variable("delay", gDelay);
-  Particle.variable("debug", gDebug);
+  Particle.variable("pattern", gPattern);
+  Particle.variable("threshold", gSensorThreshold);
+  Particle.variable("batLvl", gBatLvl);
+  Particle.variable("slrLvl", gSlrLvl);
   
-  // Set Variables
+  // Variables setters.
   Particle.function("setBright", setBrightness);
-  Particle.function("setDelay", setDelay);
   Particle.function("setThreshold", setThreshold);
-  Particle.function("setDebug", setDebug);
   
-  // Expose cloud functions.
+  // Functions.
   Particle.function("turnOff", turnOffFunction);
   
   // Start patterns.
-  // Particle.function("Rainbow", rainbow_start);
-  // Particle.function("Ranger", ranger_start);
-  // Particle.function("Cylon", cylon_start);
-  // Particle.function("RandomColors", randomColors_start);
-  
+  Particle.function("startPattern", startPattern);
+}
+
+void setupPins() {
+  pinMode(LED_PWR, OUTPUT);
+  pinMode(BAT_LVL, INPUT);
+  pinMode(SLR_LVL, INPUT);
+}
+
+void setupLeds() {
   // Initialize LED strips
   for (uint8_t i = 0; i < NUM_COLUMNS; i++) {
     strips[i].begin();
     strips[i].setBrightness(gBrightness);
   }
+  
+  // Setup all LED strips.
+  for (int i=0; i<NUM_COLUMNS; i++) {
+    columns[i].setDotStars(&strips[i]);
+  }
+}
 
-  // Declare LED power control as output
-  pinMode(LED_PWR, OUTPUT);
-
+void setupSensors() {
   // Setup sensor inputs
   pinMode(RNG_1, INPUT);
   pinMode(RNG_2, INPUT);
@@ -119,25 +133,12 @@ void setup() {
   pinMode(RNG_8, INPUT);
   pinMode(RNG_9, INPUT);
   pinMode(RNG_10, INPUT);
+}
 
-  pinMode(BAT_LVL, INPUT);
-  pinMode(SLR_LVL, INPUT);
-
-  // Give everying a moment.
-  delay(100);
-  turnOff();
-  
-  delay(1000);
-  
-  for (int i=0; i<NUM_COLUMNS; i++) {
-    columns[i].setDotStars(&strips[i]);
-  }
-  
+void setupPatterns() {
   patRainbow.setColumns((MeterColumn*) &columns);
   patSine.setColumns((MeterColumn*) &columns);
   patCylon.setColumns((MeterColumn*) &columns);
-  
-  patterns[pattern].start();
 }
 
 // Simply animate the current mode.
@@ -154,8 +155,8 @@ void loop() {
   // Get a value for every sensor.
   readDistances();
   
-  // TEMP
-  patterns[pattern].start();
+  // Animate the pattern.
+  patterns[gPattern].loop();
 }
 
 void readBatLvl() {
@@ -167,16 +168,19 @@ void readSlrLvl() {
 }
 
 void readDistances() {
-  gDistance[0] = analogRead(RNG_1);
-  gDistance[1] = analogRead(RNG_2);
-  gDistance[2] = analogRead(RNG_3);
-  gDistance[3] = analogRead(RNG_4);
-  gDistance[4] = analogRead(RNG_5);
-  gDistance[5] = analogRead(RNG_6);
-  gDistance[6] = analogRead(RNG_7);
-  gDistance[7] = analogRead(RNG_8);
-  gDistance[8] = analogRead(RNG_9);
-  gDistance[9] = analogRead(RNG_10);
+  static const float oldScale = 0.2;
+  static const float newScale = 1.0 - oldScale;
+  
+  gDistance[0] = oldScale * gDistance[0] + newScale * analogRead(RNG_1);
+  gDistance[1] = oldScale * gDistance[1] + newScale * analogRead(RNG_2);
+  gDistance[2] = oldScale * gDistance[2] + newScale * analogRead(RNG_3);
+  gDistance[3] = oldScale * gDistance[3] + newScale * analogRead(RNG_4);
+  gDistance[4] = oldScale * gDistance[4] + newScale * analogRead(RNG_5);
+  gDistance[5] = oldScale * gDistance[5] + newScale * analogRead(RNG_6);
+  gDistance[6] = oldScale * gDistance[6] + newScale * analogRead(RNG_7);
+  gDistance[7] = oldScale * gDistance[7] + newScale * analogRead(RNG_8);
+  gDistance[8] = oldScale * gDistance[8] + newScale * analogRead(RNG_9);
+  gDistance[9] = oldScale * gDistance[9] + newScale * analogRead(RNG_10);
   
   // Set the global sensor boolean values.
   for (int i = 0; i < NUM_COLUMNS; i++) {
@@ -202,6 +206,18 @@ void turnOff() {
   digitalWrite(LED_CLK8, HIGH);
   digitalWrite(LED_CLK9, HIGH);
   digitalWrite(LED_CLK10, HIGH);
+}
+
+int startPattern(String arg) {
+  uint8_t i = arg.toInt();
+  if (i >= 0 && i < NUM_PATTERNS) {
+    turnOn();
+    gPattern = i;
+    patterns[gPattern].start();
+    return 1;
+  } else {
+    return -1;
+  }
 }
 
 void setAllToBlack() {
@@ -243,22 +259,9 @@ int setBrightness(String arg) {
   return 1;
 }
 
-int setDelay(String arg) {
-  gDelay = arg.toInt();
-  if (gDelay < 0) gDelay = 0;
-  if (gDelay > 10000) gDelay = 10000;
-  return 1;
-}
-
 int setThreshold(String arg) {
   gSensorThreshold = arg.toInt();
   if (gSensorThreshold < 0) gSensorThreshold = 0;
   if (gSensorThreshold > 5000) gSensorThreshold = 5000;
-  return 1;
-}
-
-int setDebug(String arg) {
-  gDebug = arg.toInt();
-  if (gDebug < 0) gDebug = 0;
   return 1;
 }
