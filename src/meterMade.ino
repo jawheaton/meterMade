@@ -52,16 +52,22 @@ Sine patSine;
 #include "Cylon.h"
 Cylon patCylon;
 
-#define NUM_PATTERNS 3
+#include "Random.h"
+Random patRandom;
+
+#define NUM_PATTERNS 4
 
 PatBase* patterns[NUM_PATTERNS];
 
+int gDelay = 0;
 int gPattern = 0;
 bool gLedPower = false;
 int gBrightness = 128;
+bool gSensors[NUM_COLUMNS];
+bool gLastSensors[NUM_COLUMNS];
 int gDistance[NUM_COLUMNS];
 int gSensorThreshold = 2500;
-bool gSensors[NUM_COLUMNS];
+bool gSensorsChanged = false;
 
 int gBatLvl = 0;
 int gSlrLvl = 0;
@@ -73,10 +79,19 @@ void setup() {
   setupLeds();
   setupSensors();
   setupPatterns();
+  setupVariables();
 
   // Give everying a moment.
   delay(100);
   turnOff();
+}
+
+void setupVariables()
+{
+  for (int i=0; i<NUM_COLUMNS; i++)
+  {
+    gSensors[i] = gLastSensors[i] = false;
+  }
 }
 
 void setupParticle() {
@@ -136,6 +151,7 @@ void setupPatterns() {
   patterns[0] = &patRainbow;
   patterns[1] = &patSine;
   patterns[2] = &patCylon;
+  patterns[3] = &patRandom;
 
   for (int i = 0; i < NUM_PATTERNS; i++) {
     patterns[i]->setColumns(columns);
@@ -159,15 +175,13 @@ void loop() {
   // Send the currently triggered sensors to the pattern.
   patterns[gPattern]->setSensors(gSensors);
   
-  // for (int col = 0; col < NUM_COLUMNS; col++) {
-  //   for (int i = 0; i < NUM_METERS_PER_COLUMN; i++) {
-  //     columns[col].meterRGB(i, 0,255,0);
-  //   }
-  // }
-  // showAllColumns();
-  
   // Animate the pattern.
   patterns[gPattern]->loop();
+
+  // global delay (to spped up or slow down any pattern
+  // distances are read again and delay stops if gSensorsStateChanged
+  if ((gDelay < 10000) && (gDelay > 0))
+    delayAndReadDistances(gDelay);
 }
 
 void readBatLvl() {
@@ -182,6 +196,14 @@ void readDistances() {
   static const float oldScale = 0.2;
   static const float newScale = 1.0 - oldScale;
   
+  // set history of sensor values to detect any change
+  for (int i=0; i<NUM_COLUMNS; i++)
+  {
+    gLastSensors[i] = gSensors[i];  // copy previous state
+  }
+  gSensorsChanged = false;
+
+  // get new values and scale them
   gDistance[0] = oldScale * gDistance[0] + newScale * analogRead(RNG_1);
   gDistance[1] = oldScale * gDistance[1] + newScale * analogRead(RNG_2);
   gDistance[2] = oldScale * gDistance[2] + newScale * analogRead(RNG_3);
@@ -193,9 +215,25 @@ void readDistances() {
   gDistance[8] = oldScale * gDistance[8] + newScale * analogRead(RNG_9);
   gDistance[9] = oldScale * gDistance[9] + newScale * analogRead(RNG_10);
   
-  // Set the global sensor boolean values.
+   // Set the global sensor boolean values.
   for (int i = 0; i < NUM_COLUMNS; i++) {
     gSensors[i] = gDistance[i] > gSensorThreshold;
+    if (gSensors[i] != gLastSensors[i])
+      gSensorsChanged = true;
+  }
+}
+
+void delayAndReadDistances(int myDelay)
+{
+  long startTime = millis();
+  if (myDelay < 0)
+    return;
+  while ((millis() - startTime) < (long)myDelay)
+  {
+    readDistances();    // update distance values and sensor (trigger) state
+    if (gSensorsChanged)
+      break;            // if movement detected break out of delay loop to let pattern adapt.
+    delay(1);
   }
 }
 
@@ -230,6 +268,14 @@ int startPattern(String arg) {
   if (i >= 0 && i < NUM_PATTERNS) {
     turnOn();
     gPattern = i;
+    // set any pattern specific global values at pattern start time(e.g. gDelay, gBrightness, etc...
+    switch (gPattern)
+    {
+      case 3: 
+        gDelay = 500; break;
+      default:
+        break;
+    }
     patterns[gPattern]->start();
     return 1;
   } else {
