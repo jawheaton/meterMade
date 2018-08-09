@@ -274,6 +274,7 @@ int startPattern(String arg) {
       case 3: 
         gDelay = 500; break;
       default:
+        gDelay = 0;
         break;
     }
     patterns[gPattern]->start();
