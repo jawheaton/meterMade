@@ -18,6 +18,7 @@ public:
   void setColumns(MeterColumn* columns);
   void setSensors(bool* sensors);
   void show();
+  void setAllBlack();
   
   // Fast 8 bit sine and cosine functions.
   uint8_t sin8(uint8_t theta);

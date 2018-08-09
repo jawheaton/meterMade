@@ -69,6 +69,15 @@ uint8_t PatBase::getY(uint8_t col, uint8_t meter) {
   return ((METERS - meter - 1) * 255) / (METERS - 2);
 }
 
+void PatBase::setAllBlack() {
+  for (int col = 0; col < COLS; col++) {
+    for (int meter = 0; meter < METERS; meter++)
+    {
+      columns[col].meterRGB(meter, 0,0,0);
+    }
+  }
+}
+
 void PatBase::show() {
   for (int col = 0; col < COLS; col++) {
     columns[col].leds->show();

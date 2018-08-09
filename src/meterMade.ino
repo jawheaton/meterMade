@@ -55,7 +55,13 @@ Cylon patCylon;
 #include "Random.h"
 Random patRandom;
 
-#define NUM_PATTERNS 4
+#include "ChaseUp.h"
+ChaseUp patChaseUp;
+
+#include "ChaseAround.h"
+ChaseUp patChaseAround;
+
+#define NUM_PATTERNS 6
 
 PatBase* patterns[NUM_PATTERNS];
 
@@ -152,6 +158,8 @@ void setupPatterns() {
   patterns[1] = &patSine;
   patterns[2] = &patCylon;
   patterns[3] = &patRandom;
+  patterns[4] = &patChaseUp;
+  patterns[5] = &patChaseAround;
 
   for (int i = 0; i < NUM_PATTERNS; i++) {
     patterns[i]->setColumns(columns);
@@ -271,7 +279,11 @@ int startPattern(String arg) {
     // set any pattern specific global values at pattern start time(e.g. gDelay, gBrightness, etc...
     switch (gPattern)
     {
-      case 3: 
+      case 3: // random 
+        gDelay = 500; break;
+      case 4: // Chase up
+        gDelay = 1000; break;
+      case 5: // Chase Around
         gDelay = 500; break;
       default:
         gDelay = 0;
