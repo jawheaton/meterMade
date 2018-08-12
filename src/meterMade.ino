@@ -65,17 +65,42 @@ ChaseUp patChaseAround;
 
 PatBase* patterns[NUM_PATTERNS];
 
-int gDelay = 0;
+// The index of the current pattern.
 int gPattern = 0;
+
+// The number of patterns. This is exposed to the particle API so that you know that range
+// when setting a pattern.
+int gNumPatterns = NUM_PATTERNS;
+
+// Force a delay between each frame, in addtion tp what is in that pattern.
+int gDelay = 0;
+
+// True when the LEDs are on and animating.
 bool gLedPower = false;
+
+// Brightness of the LEDS.
 int gBrightness = 128;
+
+// An boolean for every sensor. True of that sensor value is > gSensorThreshold
 bool gSensors[NUM_COLUMNS];
+
+// Previous sensor state, used for interrupting a delay to animate a column.
 bool gLastSensors[NUM_COLUMNS];
-int gDistance[NUM_COLUMNS];
-int gSensorThreshold = 2500;
+
+// True if any sensor was just activated.
 bool gSensorsChanged = false;
 
+// Raw sensor readings.
+int gDistance[NUM_COLUMNS];
+
+// The value that sensor must be to activated.
+int gSensorThreshold = 2500;
+
+// The analogRead value of the battery.  ~2650 seems to be full. ~2350 seems to empty.
 int gBatLvl = 0;
+
+// The analogRead value of the solar panel. Day time this should be the same as the
+// battery level. Nighttime, it should be near zero.
 int gSlrLvl = 0;
 
 void setup() {
@@ -105,6 +130,7 @@ void setupParticle() {
   Particle.variable("power", gLedPower);
   Particle.variable("brightness", gBrightness);
   Particle.variable("pattern", gPattern);
+  Particle.variable("numPatterns", gNumPatterns);
   Particle.variable("threshold", gSensorThreshold);
   Particle.variable("batLvl", gBatLvl);
   Particle.variable("slrLvl", gSlrLvl);
