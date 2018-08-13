@@ -223,8 +223,8 @@ void loop() {
 // On the hour, see if we should turn on or off based on light availabily.
 // If it's on, change the pattern.
 void checkTime() {
-  if (hour() != gCurrentHour) {
-    gCurrentHour = hour();
+  if (Time.hour() != gCurrentHour) {
+    gCurrentHour = Time.hour();
     
     // Nighttime: If off, turn on. Set a random pattern.
     if (gSlrLvl < 1000) {
@@ -283,7 +283,7 @@ void delayAndReadDistances(int myDelay)
   long startTime = millis();
   if (myDelay < 0)
     return;
-  while ((millis() - startTime) < (long)myDelay)
+  while ((millis() - startTime) < (unsigned long)myDelay)
   {
     readDistances();    // update distance values and sensor (trigger) state
     if (gSensorsChanged)
