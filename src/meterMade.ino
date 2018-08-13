@@ -227,7 +227,7 @@ void checkTime() {
     gCurrentHour = Time.hour();
     
     // Nighttime: If off, turn on. Set a random pattern.
-    if (gSlrLvl < 1000) {
+    if (gSlrLvl < 2100) {
       if (!gLedPower) turnOn();
       startPattern(String(random(NUM_PATTERNS)));
     }
