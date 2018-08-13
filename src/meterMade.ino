@@ -103,6 +103,9 @@ int gBatLvl = 0;
 // battery level. Nighttime, it should be near zero.
 int gSlrLvl = 0;
 
+// Save the current hour in order to observe when the hour changes and run the hourly tasks.
+int gCurrentHour = 0;
+
 void setup() {
   Serial.begin(9600);
 
@@ -196,26 +199,44 @@ void setupPatterns() {
 void loop() {
   readBatLvl();
   readSlrLvl();
+  checkTime();
   
-  // Nothing to do if the sculpture is powered off.
-  if (!gLedPower) {
-    delay(500);
-    return;
-  }
-  
-  // Get a value for every sensor.
-  readDistances();
-  
-  // Send the currently triggered sensors to the pattern.
-  patterns[gPattern]->setSensors(gSensors);
-  
-  // Animate the pattern.
-  patterns[gPattern]->loop();
+  // Only run the main loop if we are powered on.
+  if (gLedPower) {
+    // Get a value for every sensor.
+    readDistances();
+    
+    // Send the currently triggered sensors to the pattern.
+    patterns[gPattern]->setSensors(gSensors);
+    
+    // Animate the pattern.
+    patterns[gPattern]->loop();
 
-  // global delay (to spped up or slow down any pattern
-  // distances are read again and delay stops if gSensorsStateChanged
-  if ((gDelay < 10000) && (gDelay > 0))
-    delayAndReadDistances(gDelay);
+    // Global delay (to spped up or slow down any pattern
+    // distances are read again and delay stops if gSensorsStateChanged
+    if ((gDelay < 10000) && (gDelay > 0)) {
+      delayAndReadDistances(gDelay);
+    }
+  }
+}
+
+// On the hour, see if we should turn on or off based on light availabily.
+// If it's on, change the pattern.
+void checkTime() {
+  if (hour() != gCurrentHour) {
+    gCurrentHour = hour();
+    
+    // Nighttime: If off, turn on. Set a random pattern.
+    if (gSlrLvl < 1000) {
+      if (!gLedPower) turnOn();
+      startPattern(String(random(NUM_PATTERNS)));
+    }
+    
+    // Daytime: Turn off.
+    else if (gLedPower) {
+      turnOff();
+    }
+  }
 }
 
 void readBatLvl() {
