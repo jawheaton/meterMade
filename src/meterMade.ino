@@ -106,6 +106,8 @@ int gSlrLvl = 0;
 // Save the current hour in order to observe when the hour changes and run the hourly tasks.
 int gCurrentHour = 0;
 
+int gSensorIndex = 0;
+
 void setup() {
   Serial.begin(9600);
 
@@ -137,11 +139,12 @@ void setupParticle() {
   Particle.variable("threshold", gSensorThreshold);
   Particle.variable("batLvl", gBatLvl);
   Particle.variable("slrLvl", gSlrLvl);
+  Particle.variable("SensorValue", gDistance[gSensorIndex]);
   
   // Variables setters.
   Particle.function("setBright", setBrightness);
   Particle.function("setThreshold", setThreshold);
-  
+  Particle.function("setSensIdx", setSensorIndex);
   // Functions.
   Particle.function("turnOff", turnOffFunction);
   
@@ -270,9 +273,11 @@ void readDistances() {
   gDistance[8] = oldScale * gDistance[8] + newScale * analogRead(RNG_9);
   gDistance[9] = oldScale * gDistance[9] + newScale * analogRead(RNG_10);
   
+  Serial.println("---------");
    // Set the global sensor boolean values.
   for (int i = 0; i < NUM_COLUMNS; i++) {
     gSensors[i] = gDistance[i] > gSensorThreshold;
+	Serial.println(gDistance[i]);
     if (gSensors[i] != gLastSensors[i])
       gSensorsChanged = true;
   }
@@ -388,4 +393,11 @@ int setThreshold(String arg) {
   if (gSensorThreshold < 0) gSensorThreshold = 0;
   if (gSensorThreshold > 5000) gSensorThreshold = 5000;
   return 1;
+}
+
+int setSensorIndex(String arg) {
+  gSensorIndex= arg.toInt();
+  if (gSensorIndex < 0) gSensorIndex = 0;
+  if (gSensorIndex > 9) gSensorIndex = 9;
+  return gDistance[gSensorIndex];
 }
