@@ -14,5 +14,6 @@ void Random::loop() {
     }
   }
   
+  delay(500);
   show();
 }

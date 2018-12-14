@@ -17,8 +17,8 @@
 #define LED_CLK10 D3
 
 #define RNG_1   A5
-#define RNG_2   A4
-#define RNG_3   A3
+#define RNG_2   A3
+#define RNG_3   A4
 #define RNG_4   A2
 #define RNG_5   A1
 #define RNG_6   A0
@@ -46,8 +46,8 @@ MeterColumn columns[NUM_COLUMNS];
 #include "Rainbow.h"
 Rainbow patRainbow;
 
-#include "Sine.h"
-Sine patSine;
+// #include "Sine.h"
+// Sine patSine;
 
 #include "Cylon.h"
 Cylon patCylon;
@@ -55,13 +55,13 @@ Cylon patCylon;
 #include "Random.h"
 Random patRandom;
 
-#include "ChaseUp.h"
-ChaseUp patChaseUp;
+// #include "ChaseUp.h"
+// ChaseUp patChaseUp;
+// 
+// #include "ChaseAround.h"
+// ChaseUp patChaseAround;
 
-#include "ChaseAround.h"
-ChaseUp patChaseAround;
-
-#define NUM_PATTERNS 6
+#define NUM_PATTERNS 3
 
 PatBase* patterns[NUM_PATTERNS];
 
@@ -139,7 +139,7 @@ void setupParticle() {
   Particle.variable("threshold", gSensorThreshold);
   Particle.variable("batLvl", gBatLvl);
   Particle.variable("slrLvl", gSlrLvl);
-  Particle.variable("SensorValue", gDistance[gSensorIndex]);
+  // Particle.variable("SensorValue", gDistance[gSensorIndex]);
   
   // Variables setters.
   Particle.function("setBright", setBrightness);
@@ -187,11 +187,11 @@ void setupSensors() {
 
 void setupPatterns() {
   patterns[0] = &patRainbow;
-  patterns[1] = &patSine;
-  patterns[2] = &patCylon;
-  patterns[3] = &patRandom;
-  patterns[4] = &patChaseUp;
-  patterns[5] = &patChaseAround;
+  patterns[1] = &patCylon;
+  patterns[2] = &patRandom;
+  // patterns[3] = &patSine;
+  // patterns[4] = &patChaseUp;
+  // patterns[5] = &patChaseAround;
 
   for (int i = 0; i < NUM_PATTERNS; i++) {
     patterns[i]->setColumns(columns);
@@ -304,6 +304,9 @@ void turnOff() {
       columns[col].meterRGB(i, 0,0,0);
     }
   }
+  
+  // Yeah, we have to do this twice... Gremlins.
+  showAllColumns();
   showAllColumns();
   
   // digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
