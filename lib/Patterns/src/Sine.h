@@ -4,11 +4,10 @@
 #include "PatBase.h"
 
 class Sine : public PatBase {
-public:
+ public:
   uint8_t hue;
   uint8_t val;
-  
+
   void start();
   void loop();
 };
-

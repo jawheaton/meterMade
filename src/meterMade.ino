@@ -34,8 +34,8 @@ MeterColumn columns[NUM_COLUMNS];
 #include "Rainbow.h"
 Rainbow patRainbow;
 
-// #include "Sine.h"
-// Sine patSine;
+#include "Sine.h"
+Sine patSine;
 
 #include "Cylon.h"
 Cylon patCylon;
@@ -49,7 +49,7 @@ Random patRandom;
 // #include "ChaseAround.h"
 // ChaseUp patChaseAround;
 
-#define NUM_PATTERNS 3
+#define NUM_PATTERNS 4
 
 PatBase *patterns[NUM_PATTERNS];
 
@@ -130,7 +130,7 @@ void setupPatterns() {
   patterns[0] = &patRainbow;
   patterns[1] = &patCylon;
   patterns[2] = &patRandom;
-  // patterns[3] = &patSine;
+  patterns[3] = &patSine;
   // patterns[4] = &patChaseUp;
   // patterns[5] = &patChaseAround;
 
