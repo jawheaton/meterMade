@@ -1,0 +1,23 @@
+{
+  "name": "tower-firmware",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "compile": "particle compile electron . --target 1.2.1-rc.3 --saveTo firmware.bin",
+    "flash": "particle flash MeterMade2 firmware.bin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jawheaton/meterMade.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jawheaton/meterMade/issues"
+  },
+  "homepage": "https://github.com/jawheaton/meterMade#readme"
+}

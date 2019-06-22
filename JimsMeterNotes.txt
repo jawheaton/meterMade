@@ -11,9 +11,9 @@ https://community.particle.io
 
 
 Users/jwheaton/Documents/GitHub/meterMade
-Brew install dfu-util
-Particle login
-Particle update
+brew install dfu-util
+particle login
+particle update
 
 Cwd should be /Users/jwheaton/Documents/GitHub/meterMade
 
