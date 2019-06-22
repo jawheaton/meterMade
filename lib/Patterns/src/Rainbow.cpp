@@ -14,5 +14,5 @@ void Rainbow::loop() {
   }
 
   show();
-  delay(50);
+  delay(40);
 }
