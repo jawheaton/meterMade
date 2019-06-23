@@ -43,13 +43,10 @@ Cylon patCylon;
 #include "Random.h"
 Random patRandom;
 
-// #include "ChaseUp.h"
-// ChaseUp patChaseUp;
-//
-// #include "ChaseAround.h"
-// ChaseUp patChaseAround;
+#include "Fire.h"
+Fire patFire;
 
-#define NUM_PATTERNS 4
+#define NUM_PATTERNS 5
 
 PatBase *patterns[NUM_PATTERNS];
 
@@ -59,9 +56,6 @@ int gPattern = 0;
 // The number of patterns. This is exposed to the particle API so that you know
 // that range when setting a pattern.
 int gNumPatterns = NUM_PATTERNS;
-
-// Force a delay between each frame, in addtion tp what is in that pattern.
-int gDelay = 0;
 
 // True when the LEDs are on and animating.
 bool gLedPower = false;
@@ -131,8 +125,7 @@ void setupPatterns() {
   patterns[1] = &patCylon;
   patterns[2] = &patRandom;
   patterns[3] = &patSine;
-  // patterns[4] = &patChaseUp;
-  // patterns[5] = &patChaseAround;
+  patterns[4] = &patFire;
 
   for (int i = 0; i < NUM_PATTERNS; i++) {
     patterns[i]->setColumns(columns);
@@ -213,22 +206,6 @@ int startPattern(String arg) {
   if (i >= 0 && i < NUM_PATTERNS) {
     turnOn();
     gPattern = i;
-    // set any pattern specific global values at pattern start time(e.g. gDelay,
-    // gBrightness, etc...
-    switch (gPattern) {
-      case 3:  // random
-        gDelay = 500;
-        break;
-      case 4:  // Chase up
-        gDelay = 1000;
-        break;
-      case 5:  // Chase Around
-        gDelay = 500;
-        break;
-      default:
-        gDelay = 0;
-        break;
-    }
     patterns[gPattern]->start();
     return 1;
   } else {
