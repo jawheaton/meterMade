@@ -7,6 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
+    "start": "npm run compile && npm run flash",
     "compile": "particle compile electron . --target 1.2.1-rc.3 --saveTo firmware.bin",
     "flash": "particle flash MeterMade2 firmware.bin"
   },

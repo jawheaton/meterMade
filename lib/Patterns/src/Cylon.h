@@ -5,9 +5,8 @@
 
 class Cylon : public PatBase {
  public:
-  uint8_t pos;
+  uint16_t pos;
   uint8_t hue;
-  bool climbing;
 
   void start();
   void loop();

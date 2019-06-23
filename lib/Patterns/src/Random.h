@@ -4,9 +4,10 @@
 #include "PatBase.h"
 
 class Random : public PatBase {
-public:
-  
+ public:
+  uint8_t hue;
+  uint8_t twinkles[360];
+
   void start();
   void loop();
 };
-
