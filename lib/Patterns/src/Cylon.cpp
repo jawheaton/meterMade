@@ -19,10 +19,10 @@ void Cylon::loop() {
       uint8_t val4 = valueForPos(255);
 
       uint8_t meterHue = hue + getX(col, meter);
-      columns[col].meterHSV(meter, meterHue, 200, val1, 0b1000);
-      columns[col].meterHSV(meter, meterHue, 200, val2, 0b0100);
-      columns[col].meterHSV(meter, meterHue, 200, val3, 0b0010);
-      columns[col].meterHSV(meter, meterHue, 200, val4, 0b0001);
+      columns[col].meterHSV(meter, meterHue, 255, val1, 0b1000);
+      columns[col].meterHSV(meter, meterHue, 255, val2, 0b0100);
+      columns[col].meterHSV(meter, meterHue, 255, val3, 0b0010);
+      columns[col].meterHSV(meter, meterHue, 255, val4, 0b0001);
     }
   }
 
@@ -41,6 +41,5 @@ uint8_t Cylon::valueForPos(uint8_t ledPos) {
   }
 
   int val = 255 - abs(ledPos - localPos) * 3;
-  val = constrain(val, 0, 255);
-  return (val * val) / 255;
+  return constrain(val, 0, 255);
 }
