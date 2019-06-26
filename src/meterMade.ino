@@ -74,6 +74,9 @@ int gBatLvl = 0;
 // the battery level. Nighttime, it should be near zero.
 int gSlrLvl = 0;
 
+// True when the batLvl is less than LOW_BAT.
+bool lowPower = false;
+
 // Save the current hour in order to observe when the hour changes and run the
 // hourly tasks.
 int gCurrentHour = 0;
@@ -98,6 +101,7 @@ void setupParticle() {
   Particle.variable("numPatterns", gNumPatterns);
   Particle.variable("batLvl", gBatLvl);
   Particle.variable("slrLvl", gSlrLvl);
+  Particle.variable("lowPower", lowPower);
 
   Particle.function("setBright", setBrightness);
   Particle.function("turnOff", turnOffFunction);
@@ -154,13 +158,9 @@ void loop() {
     startPattern(String(random(NUM_PATTERNS)));
   }
 
-  // Turn off when it should.
-  if (!shouldBePoweredOn() && gLedPower) {
-    turnOff();
-  }
-
   // Low power mode.
   if (shouldBePoweredOn() && gBatLvl < LOW_BAT) {
+    lowPower = true;
     patRandom.lowPower = true;
     if (gPattern != 2) {
       gPattern = 2;
@@ -177,6 +177,8 @@ bool shouldBePoweredOn() {
   }
 
   // Daytime.
+  lowPower = false;
+  patRandom.lowPower = false;
   return false;
 }
 
@@ -187,6 +189,8 @@ void checkTime() {
 
     if (shouldBePoweredOn()) {
       startPattern(String(random(NUM_PATTERNS)));
+    } else {
+      turnOff();
     }
   }
 }
