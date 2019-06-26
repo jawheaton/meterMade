@@ -6,16 +6,19 @@ void Random::start() {
   for (int i = 0; i < COLS * METERS; i++) {
     twinkles[i] = 0;
   }
+  lowPower = false;
 }
 
 void Random::loop() {
   hue++;
 
+  uint8_t maxBright = lowPower ? 127 : 255;
+
   // Even values count down, odd counts up.
   for (int meter = 0; meter < COLS * METERS; meter++) {
     uint8_t val = twinkles[meter];
     if (val > 0) {
-      if (val == 255) {
+      if (val == maxBright) {
         val--;
       } else if (val % 2 == 0) {
         val -= 2;
@@ -26,8 +29,10 @@ void Random::loop() {
     }
   }
 
+  
   // Generate twinkles.
-  if (random(100) <= 10) {
+  uint8_t spawnThresh = lowPower ? 2 : 10;
+  if (random(100) <= spawnThresh) {
     int newTwinkleIndex = random(COLS * METERS);
     if (twinkles[newTwinkleIndex] == 0) {
       twinkles[newTwinkleIndex] = 1;
@@ -45,6 +50,5 @@ void Random::loop() {
     }
   }
 
-  // delay(5);
   show();
 }

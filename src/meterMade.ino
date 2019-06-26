@@ -16,6 +16,9 @@
 #define LED_CLK9 D2
 #define LED_CLK10 D3
 
+#define LOW_BAT 2450
+#define DUSK 2100
+
 Adafruit_DotStar strips[] = {
     Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK1, DOTSTAR_BGR),
     Adafruit_DotStar(NUM_LEDS_PER_COLUMN, LED_DAT, LED_CLK2, DOTSTAR_BGR),
@@ -134,8 +137,9 @@ void setupPatterns() {
 
 // Simply animate the current mode.
 void loop() {
-  readBatLvl();
-  readSlrLvl();
+  gBatLvl = analogRead(BAT_LVL);
+  gSlrLvl = analogRead(SLR_LVL);
+
   checkTime();
 
   // Only run the main loop if we are powered on.
@@ -143,35 +147,49 @@ void loop() {
     // Animate the pattern.
     patterns[gPattern]->loop();
   }
-}
 
-// On the hour, see if we should turn on or off based on light availabily.
-// If it's on, change the pattern.
-void checkTime() {
-  if (Time.hour() != gCurrentHour) {
-    gCurrentHour = Time.hour();
+  // Turn on when it should.
+  if (shouldBePoweredOn() && !gLedPower) {
+    turnOn();
+    startPattern(String(random(NUM_PATTERNS)));
+  }
 
-    // Late night to morning: stay off to conserve battery.
-    if (1 <= gCurrentHour && gCurrentHour <= 9) {
-      turnOff();
-    }
+  // Turn off when it should.
+  if (!shouldBePoweredOn() && gLedPower) {
+    turnOff();
+  }
 
-    // Nighttime: If off, turn on. Set a random pattern.
-    else if (gSlrLvl < 2100) {
-      if (!gLedPower) turnOn();
-      startPattern(String(random(NUM_PATTERNS)));
-    }
-
-    // Daytime: Turn off.
-    else if (gLedPower) {
-      turnOff();
+  // Low power mode.
+  if (shouldBePoweredOn() && gBatLvl < LOW_BAT) {
+    patRandom.lowPower = true;
+    if (gPattern != 2) {
+      gPattern = 2;
+      patRandom.start();
     }
   }
 }
 
-void readBatLvl() { gBatLvl = analogRead(BAT_LVL); }
+// Returns true when the led should be lit up.
+bool shouldBePoweredOn() {
+  // Nightime, but not too late.
+  if (gSlrLvl < DUSK && (gCurrentHour < 1 || gCurrentHour > 12)) {
+    return true;
+  }
 
-void readSlrLvl() { gSlrLvl = analogRead(SLR_LVL); }
+  // Daytime.
+  return false;
+}
+
+// On the hour, switch the pattern.
+void checkTime() {
+  if (Time.hour() != gCurrentHour) {
+    gCurrentHour = Time.hour();
+
+    if (shouldBePoweredOn()) {
+      startPattern(String(random(NUM_PATTERNS)));
+    }
+  }
+}
 
 // Cuts power to LEDs via the N-Channel MOSFET.
 void turnOff() {
@@ -188,10 +206,9 @@ void turnOff() {
   // digitalWrite(LED_PWR, LOW); // turn off the N-Channel transistor switch.
   gLedPower = false;
 
-  // Set all LED data and clock pins to HIGH so these pins can't be used as GND
-  // by the LEDs. digitalWrite(LED_DAT, HIGH); digitalWrite(LED_CLK1, HIGH);
-  // digitalWrite(LED_CLK2, HIGH);
-  // digitalWrite(LED_CLK3, HIGH);
+  // Set all LED data and clock pins to HIGH so these pins can't be used as
+  // GND by the LEDs. digitalWrite(LED_DAT, HIGH); digitalWrite(LED_CLK1,
+  // HIGH); digitalWrite(LED_CLK2, HIGH); digitalWrite(LED_CLK3, HIGH);
   // digitalWrite(LED_CLK4, HIGH);
   // digitalWrite(LED_CLK5, HIGH);
   // digitalWrite(LED_CLK6, HIGH);
@@ -228,8 +245,8 @@ int turnOffFunction(String arg) {
   return 1;
 }
 
-// Enables all LED by turning on the N-Channel MOSFET and connecting the LEDs to
-// GND.
+// Enables all LED by turning on the N-Channel MOSFET and connecting the LEDs
+// to GND.
 void turnOn() {
   gLedPower = true;
   digitalWrite(LED_PWR, HIGH);  // turn on the N-Channel transistor switch.
