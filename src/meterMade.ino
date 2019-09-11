@@ -34,8 +34,10 @@ Adafruit_DotStar strips[] = {
 MeterColumn columns[NUM_COLUMNS];
 
 // Instantiate patterns
-#include "Rainbow.h"
-Rainbow patRainbow;
+
+// // Disable rainbow, it's too power hungry.
+// #include "Rainbow.h"
+// Rainbow patRainbow;
 
 #include "Sine.h"
 Sine patSine;
@@ -49,7 +51,7 @@ Random patRandom;
 #include "Fire.h"
 Fire patFire;
 
-#define NUM_PATTERNS 5
+#define NUM_PATTERNS 4
 
 PatBase *patterns[NUM_PATTERNS];
 
@@ -128,11 +130,11 @@ void setupLeds() {
 }
 
 void setupPatterns() {
-  patterns[0] = &patRainbow;
-  patterns[1] = &patCylon;
-  patterns[2] = &patRandom;
-  patterns[3] = &patSine;
-  patterns[4] = &patFire;
+  patterns[0] = &patCylon;
+  patterns[1] = &patRandom;
+  patterns[2] = &patSine;
+  patterns[3] = &patFire;
+  // patterns[4] = &patRainbow;
 
   for (int i = 0; i < NUM_PATTERNS; i++) {
     patterns[i]->setColumns(columns);
